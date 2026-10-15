@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html lang="gu-IN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>કારખાના હાજરી અને ખાતાવહી (Karkhana Attendance & Khata)</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Phosphor Icons for workshop / clean UI -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+            },
+            slate: {
+              850: '#151e2e',
+              900: '#0f172a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap');
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Gujarati', system-ui, sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      height: 6px;
+      width: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark .custom-scroll::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      .print-only { display: block !important; }
+      body { background: white !important; color: black !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Header Banner -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+          <i class="ph-bold ph-factory text-2xl"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
+              કારખાના હાજરી પત્રક
+              <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium border border-amber-500/30">Karkhana Hajri</span>
+            </h1>
+          </div>
+          <p class="text-xs text-slate-400">Helper Attendance, Roj & Upaad Ledger</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons & Badges -->
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div id="quickStatsBadge" class="hidden sm:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
+          <span class="text-slate-400">કુલ કારીગરો:</span>
+          <span id="badgeTotalHelpers" class="font-bold text-amber-400">0</span>
+        </div>
+
+        <button onclick="openAddHelperModal()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-lg transition shadow-sm active:scale-95">
+          <i class="ph-bold ph-user-plus text-base"></i>
+          <span>નવો હેલ્પર ઉમેરો</span>
+        </button>
+
+        <button onclick="exportDataBackup()" title="Backup / Export JSON" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
+          <i class="ph-bold ph-floppy-disk text-lg"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 border-t border-slate-800/80">
+      <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 custom-scroll" id="navTabs">
+        <button onclick="switchTab('daily')" id="tabBtn-daily" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition bg-amber-500/10 text-amber-400 border border-amber-500/30 whitespace-nowrap">
+          <i class="ph-bold ph-calendar-check text-base"></i>
+          <span>આજની હાજરી (Daily Hajri)</span>
+        </button>
+        <button onclick="switchTab('ledger')" id="tabBtn-ledger" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap">
+          <i class="ph-bold ph-notebook text-base"></i>
+          <span>મહિનાનો હિસાબ / ખાતાવહી (Khata)</span>
+        </button>
+        <button onclick="switchTab('helpers')" id="tabBtn-helpers" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap">
+          <i class="ph-bold ph-users-three text-base"></i>
+          <span>કારીગર યાદી (Helpers List)</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+
+    <!-- TAB 1: DAILY ATTENDANCE (આજની હાજરી) -->
+    <section id="tab-daily" class="space-y-5">
+      <!-- Date Bar & Controls -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl p-1 shadow-inner">
+            <button onclick="changeDateOffset(-1)" class="p-2 hover:bg-slate-200 rounded-lg text-slate-700 transition" title="Previous Day">
+              <i class="ph-bold ph-caret-left text-base"></i>
+            </button>
+            <input type="date" id="selectedDateInput" onchange="onDateChanged(this.value)" class="bg-transparent text-sm font-semibold text-slate-800 px-2 py-1 outline-none border-0 cursor-pointer">
+            <button onclick="changeDateOffset(1)" class="p-2 hover:bg-slate-200 rounded-lg text-slate-700 transition" title="Next Day">
+              <i class="ph-bold ph-caret-right text-base"></i>
+            </button>
+          </div>
+          <button onclick="setTodayDate()" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
+            આજની તારીખ (Today)
+          </button>
+          <span id="displaySelectedDateFormatted" class="text-xs sm:text-sm font-semibold text-slate-600 hidden md:inline-block"></span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="markAllPresent()" class="px-3.5 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i class="ph-bold ph-check-square-offset"></i>
+            <span>બધાને હાજર કરો (Mark All Present)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Attendance Metrics -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs text-slate-500 font-medium">કુલ કારીગર (Total)</p>
+            <p class="text-2xl font-black text-slate-800 mt-0.5" id="metricTotal">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl font-bold">
+            <i class="ph-bold ph-users"></i>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs text-emerald-700 font-medium">હાજર (Present / Full)</p>
+            <p class="text-2xl font-black text-emerald-700 mt-0.5" id="metricPresent">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+            <i class="ph-bold ph-check-circle"></i>
+          </div>
+        </div>
+
+        <div class="bg-amber-50/70 p-4 rounded-xl border border-amber-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs text-amber-700 font-medium">અડધો રોજ (Half Day)</p>
+            <p class="text-2xl font-black text-amber-700 mt-0.5" id="metricHalf">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
+            <i class="ph-bold ph-clock-countdown"></i>
+          </div>
+        </div>
+
+        <div class="bg-rose-50/70 p-4 rounded-xl border border-rose-200 shadow-sm flex items-center justify-between">
+          <div>
+            <p class="text-xs text-rose-700 font-medium">રજા / ગેરહાજર (Absent)</p>
+            <p class="text-2xl font-black text-rose-700 mt-0.5" id="metricAbsent">0</p>
+          </div>
+          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl">
+            <i class="ph-bold ph-x-circle"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attendance List -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <i class="ph-bold ph-clipboard-text text-amber-500"></i>
+            <span>હાજરી વિગત (Attendance Marking)</span>
+          </h2>
+          <div class="relative w-full sm:w-64">
+            <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
+            <input type="text" id="dailySearchInput" oninput="renderDailyAttendance()" placeholder="નામથી શોધો (Search helper)..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div id="dailyAttendanceContainer" class="divide-y divide-slate-100">
+          <!-- Dynamically populated rows -->
+        </div>
+
+        <!-- Empty state placeholder -->
+        <div id="emptyHelpersNotice" class="hidden p-12 text-center text-slate-500">
+          <i class="ph-duotone ph-user-list text-4xl text-slate-300 mb-2"></i>
+          <p class="font-medium">હજુ કોઈ હેલ્પર ઉમેરેલ નથી (No helpers added yet)</p>
+          <button onclick="openAddHelperModal()" class="mt-3 text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg">
+            પહેલો હેલ્પર ઉમેરો +
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MONTHLY KHATA / ROJ-MEDA (મહિનાનો હિસાબ) -->
+    <section id="tab-ledger" class="hidden space-y-5">
+      <!-- Month & Year Selector & Export -->
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-500">મહિનો (Month):</label>
+            <input type="month" id="selectedMonthInput" onchange="onMonthChanged(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none">
+          </div>
+          <button onclick="resetToCurrentMonth()" class="text-xs font-semibold px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-300">
+            ચાલુ મહિનો (Current)
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button onclick="openAddAdvanceModal()" class="px-3.5 py-2 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i class="ph-bold ph-hand-coins text-base"></i>
+            <span>ઉપાડ આપો (Give Advance / Upaad)</span>
+          </button>
+          <button onclick="exportMonthlyCSV()" class="px-3.5 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i class="ph-bold ph-microsoft-excel-logo text-base"></i>
+            <span>Excel / CSV</span>
+          </button>
+          <button onclick="window.print()" class="px-3.5 py-2 text-xs sm:text-sm bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
+            <i class="ph-bold ph-printer text-base"></i>
+            <span>Print Report</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Month Totals Ribbon -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500">મહિનાની કુલ હાજરી (Man-Days)</p>
+          <p class="text-xl font-black text-slate-800" id="monthStatTotalDays">0.0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500">કુલ બનતી મજૂરી (Total Wages)</p>
+          <p class="text-xl font-black text-emerald-600" id="monthStatGrossWages">₹0</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-slate-200">
+          <p class="text-xs text-slate-500">કુલ ચૂકવેલ ઉપાડ (Total Advance)</p>
+          <p class="text-xl font-black text-rose-600" id="monthStatTotalUpaad">₹0</p>
+        </div>
+        <div class="bg-amber-50 p-4 rounded-xl border border-amber-300">
+          <p class="text-xs text-amber-800 font-bold">ચૂકવવા પાત્ર બાકી (Net Balance)</p>
+          <p class="text-xl font-black text-amber-700" id="monthStatNetPayable">₹0</p>
+        </div>
+      </div>
+
+      <!-- Monthly Detailed Ledger Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800">મહિનાનું હાજરી કાર્ડ અને હિસાબ (Monthly Roj-Meda Grid)</h2>
+            <p class="text-xs text-slate-500">P = હાજર, 1/2 = અડધો રોજ, A = રજા, +OT = ઓવરટાઇમ કલાકો</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">P: Full</span>
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">H: 0.5</span>
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">A: Absent</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-100 text-slate-600 uppercase font-semibold text-[11px] border-b border-slate-200 sticky top-0">
+              <tr id="monthlyGridHeader">
+                <!-- Injected via JS (Worker, Daily Wage, 1..31, Total Days, Gross, Advance, Net) -->
+              </tr>
+            </thead>
+            <tbody id="monthlyGridBody" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Injected via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Advance / Upaad Records Table -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+            <i class="ph-bold ph-receipt text-indigo-600"></i>
+            <span>આ મહિનાના ઉપાડની એન્ટ્રી (Advance / Upaad History for selected month)</span>
+          </h3>
+          <button onclick="openAddAdvanceModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300">
+            + નવો ઉપાડ
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
+              <tr>
+                <th class="p-2.5">તારીખ (Date)</th>
+                <th class="p-2.5">કારીગર (Helper)</th>
+                <th class="p-2.5">રકમ (Amount)</th>
+                <th class="p-2.5">નોંધ / વિગત (Notes)</th>
+                <th class="p-2.5 text-right">ક્રિયા (Action)</th>
+              </tr>
+            </thead>
+            <tbody id="advanceEntriesTableBody" class="divide-y divide-slate-100">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: HELPERS DIRECTORY (કારીગર યાદી) -->
+    <section id="tab-helpers" class="hidden space-y-5">
+      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">કારીગર / હેલ્પર લિસ્ટ (Staff Directory)</h2>
+          <p class="text-xs text-slate-500">Manage names, daily roj rates, phone numbers and roles</p>
+        </div>
+        <button onclick="openAddHelperModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-2">
+          <i class="ph-bold ph-plus-circle text-base"></i>
+          <span>નવો હેલ્પર ઉમેરો (Add Helper)</span>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="helpersCardsContainer">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD / EDIT HELPER -->
+  <div id="helperModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-slate-800 text-base" id="helperModalTitle">નવો હેલ્પર ઉમેરો (Add Helper)</h3>
+        <button onclick="closeHelperModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <form id="helperForm" onsubmit="saveHelper(event)" class="space-y-4">
+        <input type="hidden" id="helperFormId">
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">પૂરું નામ (Helper Name) *</label>
+          <input type="text" id="helperName" required placeholder="દા.ત. રમેશભાઈ પટેલ / Ramesh" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">દૈનિક રોજ / Daily Wage (₹) *</label>
+            <input type="number" id="helperWage" min="1" required placeholder="દા.ત. 450" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500 font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">કામ / ખાતું (Role/Dept)</label>
+            <input type="text" id="helperRole" placeholder="દા.ત. લેથ, પેકિંગ, હેલ્પર" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">મોબાઇલ નંબર (Phone)</label>
+            <input type="tel" id="helperPhone" placeholder="9876543210" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">જોડાવાની તારીખ (Joining)</label>
+            <input type="date" id="helperJoining" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeHelperModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+            રદ કરો (Cancel)
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl transition">
+            સાચવો (Save Helper)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD ADVANCE / UPAAD -->
+  <div id="advanceModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in duration-150">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="font-bold text-slate-800 text-base">ઉપાડ / એડવાન્સ નોંધણી (Upaad Entry)</h3>
+        <button onclick="closeAdvanceModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <form id="advanceForm" onsubmit="saveAdvance(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">કારીગર પસંદ કરો (Select Helper) *</label>
+          <select id="advanceHelperSelect" required class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+            <!-- options inserted via JS -->
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">તારીખ (Date) *</label>
+            <input type="date" id="advanceDate" required class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">રકમ / Amount (₹) *</label>
+            <input type="number" id="advanceAmount" min="1" required placeholder="500" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500 font-bold text-rose-600">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">વિગત / શેના માટે (Remark / Reason)</label>
+          <input type="text" id="advanceRemark" placeholder="દા.ત. રોકડ આપ્યા, દિવાળી ખર્ચ, તહેવાર" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeAdvanceModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+            રદ કરો
+          </button>
+          <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition">
+            ઉપાડ જમા કરો (Add Upaad)
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: WORKER MONTHLY PAYSLIP / STATEMENT -->
+  <div id="payslipModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+          <i class="ph-bold ph-receipt text-amber-500"></i>
+          <span>કારીગર માસિક પગાર સ્લિપ (Monthly Payslip)</span>
+        </h3>
+        <button onclick="closePayslipModal()" class="text-slate-400 hover:text-slate-600 text-xl">
+          <i class="ph-bold ph-x"></i>
+        </button>
+      </div>
+
+      <div id="payslipContent" class="py-4 space-y-4">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+        <button onclick="printElement('payslipContent')" class="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl flex items-center gap-1.5">
+          <i class="ph-bold ph-printer"></i>
+          <span>પ્રિન્ટ કાઢો (Print Slip)</span>
+        </button>
+        <button onclick="closePayslipModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
+          બંધ કરો (Close)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Box -->
+  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <script>
+    /**
+     * Karkhana Attendance & Khata Management Engine
+     * Data is stored in browser localStorage.
+     */
+    const STORAGE_KEY = 'karkhana_attendance_v2';
+
+    // Sample initial dataset for instant usage
+    const INITIAL_DATA = {
+      helpers: [
+        { id: 'h1', name: 'ગોપાલભાઈ રાવલ (Gopal)', phone: '9825012345', wage: 550, role: 'લેથ ઓપરેટર (Lathe)', joiningDate: '2025-01-10' },
+        { id: 'h2', name: 'મુકેશ સોલંકી (Mukesh)', phone: '9712045678', wage: 450, role: 'કટીંગ / હેલ્પર (Cutting)', joiningDate: '2025-02-01' },
+        { id: 'h3', name: 'દિનેશ પરમાર (Dinesh)', phone: '9909076543', wage: 400, role: 'પેકિંગ / લોડિંગ (Packing)', joiningDate: '2025-03-05' },
+        { id: 'h4', name: 'સંજય ઠાકોર (Sanjay)', phone: '9898032145', wage: 500, role: 'વેલ્ડીંગ (Welding)', joiningDate: '2025-01-20' },
+        { id: 'h5', name: 'અશોક વાઘેલા (Ashok)', phone: '9428098765', wage: 420, role: 'જનરલ હેલ્પર (General)', joiningDate: '2025-04-12' }
+      ],
+      // attendance keyed by "YYYY-MM-DD" -> { [helperId]: { status: 'P'|'H'|'A', otHours: 0 } }
+      attendance: {},
+      // advances: array of { id, helperId, date: "YYYY-MM-DD", amount, remark }
+      advances: []
+    };
+
+    let state = {
+      helpers: [],
+      attendance: {},
+      advances: [],
+      selectedDate: '',
+      selectedMonth: '',
+      currentTab: 'daily',
+      searchDailyTerm: ''
+    };
+
+    // Load initial state or localStorage
+    function init() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          state.helpers = parsed.helpers || [];
+          state.attendance = parsed.attendance || {};
+          state.advances = parsed.advances || [];
+        } catch (e) {
+          console.error("Failed to parse storage, using defaults", e);
+          seedData();
+        }
+      } else {
+        seedData();
+      }
+
+      // Default to Today's date and Month
+      const today = new Date();
+      state.selectedDate = formatDateToISO(today);
+      state.selectedMonth = formatMonthToISO(today);
+
+      // Seed dummy records for current month so UI looks rich immediately if empty
+      seedCurrentMonthSamplesIfEmpty();
+
+      // UI setup
+      document.getElementById('selectedDateInput').value = state.selectedDate;
+      document.getElementById('selectedMonthInput').value = state.selectedMonth;
+      updateDisplayDateText();
+
+      // Render
+      renderAll();
+    }
+
+    function seedData() {
+      state.helpers = JSON.parse(JSON.stringify(INITIAL_DATA.helpers));
+      state.attendance = {};
+      state.advances = [];
+    }
+
+    function seedCurrentMonthSamplesIfEmpty() {
+      // If no attendance exists for current month, auto-populate past few days so tables are immediately populated
+      const yyyy_mm = state.selectedMonth;
+      const hasAnyThisMonth = Object.keys(state.attendance).some(d => d.startsWith(yyyy_mm));
+      if (!hasAnyThisMonth && state.helpers.length > 0) {
+        const todayDate = new Date();
+        const curDay = todayDate.getDate();
+        // fill a few recent days
+        for (let day = 1; day <= Math.min(curDay, 10); day++) {
+          const dStr = `${yyyy_mm}-${String(day).padStart(2, '0')}`;
+          state.attendance[dStr] = {};
+          state.helpers.forEach((h, idx) => {
+            // Random believable statuses
+            let st = 'P';
+            let ot = 0;
+            if ((day + idx) % 7 === 0) st = 'A';
+            else if ((day + idx) % 5 === 0) st = 'H';
+            else if (day % 4 === 0) ot = 2; // 2 hrs overtime
+            state.attendance[dStr][h.id] = { status: st, otHours: ot };
+          });
+        }
+        // Add one sample advance
+        if (state.helpers[0]) {
+          state.advances.push({
+            id: 'adv_' + Date.now(),
+            helperId: state.helpers[0].id,
+            date: `${yyyy_mm}-05`,
+            amount: 1500,
+            remark: 'દિવાળી પૂર્વે રોકડ ઉપાડ'
+          });
+        }
+        saveToStorage(false);
+      }
+    }
+
+    function saveToStorage(notify = false) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          helpers: state.helpers,
+          attendance: state.attendance,
+          advances: state.advances
+        }));
+        if (notify) showToast('ડેટા સફળતાપૂર્વક સચવાયો (Saved)', 'success');
+      } catch (e) {
+        console.error('Storage full or error', e);
+        showToast('ડેટા સેવ કરવામાં ક્ષતિ!', 'error');
+      }
+    }
+
+    // Helper Date utilities
+    function formatDateToISO(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function formatMonthToISO(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      return `${year}-${month}`;
+    }
+
+    function updateDisplayDateText() {
+      const parts = state.selectedDate.split('-');
+      if (parts.length === 3) {
+        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+        const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+        document.getElementById('displaySelectedDateFormatted').innerText = dateObj.toLocaleDateString('gu-IN', options);
+      }
+    }
+
+    // Tab Navigation
+    function switchTab(tab) {
+      state.currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/30');
+        btn.classList.add('text-slate-400');
+      });
+      document.getElementById(`tabBtn-${tab}`).classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/30');
+      document.getElementById(`tabBtn-${tab}`).classList.remove('text-slate-400');
+
+      document.getElementById('tab-daily').classList.add('hidden');
+      document.getElementById('tab-ledger').classList.add('hidden');
+      document.getElementById('tab-helpers').classList.add('hidden');
+
+      document.getElementById(`tab-${tab}`).classList.remove('hidden');
+
+      if (tab === 'daily') renderDailyAttendance();
+      if (tab === 'ledger') renderMonthlyLedger();
+      if (tab === 'helpers') renderHelpersList();
+    }
+
+    function renderAll() {
+      document.getElementById('badgeTotalHelpers').innerText = state.helpers.length;
+      document.getElementById('metricTotal').innerText = state.helpers.length;
+      renderDailyAttendance();
+      renderMonthlyLedger();
+      renderHelpersList();
+    }
+
+    // ==========================================
+    // DAILY ATTENDANCE LOGIC
+    // ==========================================
+
+    function onDateChanged(newDate) {
+      state.selectedDate = newDate;
+      updateDisplayDateText();
+      // Keep month synced
+      const month = newDate.substring(0, 7);
+      if (month !== state.selectedMonth) {
+        state.selectedMonth = month;
+        document.getElementById('selectedMonthInput').value = month;
+      }
+      renderDailyAttendance();
+    }
+
+    function changeDateOffset(offsetDays) {
+      const cur = new Date(state.selectedDate);
+      cur.setDate(cur.getDate() + offsetDays);
+      const newD = formatDateToISO(cur);
+      state.selectedDate = newD;
+      document.getElementById('selectedDateInput').value = newD;
+      onDateChanged(newD);
+    }
+
+    function setTodayDate() {
+      const today = formatDateToISO(new Date());
+      state.selectedDate = today;
+      document.getElementById('selectedDateInput').value = today;
+      onDateChanged(today);
+    }
+
+    function getAttendanceForDate(dateStr) {
+      if (!state.attendance[dateStr]) {
+        state.attendance[dateStr] = {};
+      }
+      return state.attendance[dateStr];
+    }
+
+    function setHelperAttendance(helperId, status) {
+      const dayRecords = getAttendanceForDate(state.selectedDate);
+      const prevOt = (dayRecords[helperId] && dayRecords[helperId].otHours) ? dayRecords[helperId].otHours : 0;
+      
+      // If clicking same status again, leave as is or toggle
+      dayRecords[helperId] = {
+        status: status,
+        otHours: prevOt
+      };
+      saveToStorage(false);
+      renderDailyAttendance();
+      // update ledger in background
+      renderMonthlyLedgerSummaryStats();
+    }
+
+    function updateHelperOT(helperId, hours) {
+      const dayRecords = getAttendanceForDate(state.selectedDate);
+      const curStatus = (dayRecords[helperId] && dayRecords[helperId].status) ? dayRecords[helperId].status : 'P';
+      dayRecords[helperId] = {
+        status: curStatus,
+        otHours: Math.max(0, parseFloat(hours) || 0)
+      };
+      saveToStorage(false);
+      renderDailyAttendanceCounters();
+    }
+
+    function markAllPresent() {
+      const dayRecords = getAttendanceForDate(state.selectedDate);
+      state.helpers.forEach(h => {
+        const curOt = (dayRecords[h.id] && dayRecords[h.id].otHours) ? dayRecords[h.id].otHours : 0;
+        dayRecords[h.id] = { status: 'P', otHours: curOt };
+      });
+      saveToStorage(true);
+      renderDailyAttendance();
+      showToast('બધા કારીગરો હાજર માર્ક થયા (All Marked Present)', 'success');
+    }
+
+    function renderDailyAttendance() {
+      const container = document.getElementById('dailyAttendanceContainer');
+      const emptyNotice = document.getElementById('emptyHelpersNotice');
+      const searchTerm = (document.getElementById('dailySearchInput').value || '').trim().toLowerCase();
+
+      if (state.helpers.length === 0) {
+        container.innerHTML = '';
+        emptyNotice.classList.remove('hidden');
+        renderDailyAttendanceCounters();
+        return;
+      } else {
+        emptyNotice.classList.add('hidden');
+      }
+
+      const dayRecords = getAttendanceForDate(state.selectedDate);
+
+      const filtered = state.helpers.filter(h => {
+        return h.name.toLowerCase().includes(searchTerm) || (h.role && h.role.toLowerCase().includes(searchTerm));
+      });
+
+      let html = '';
+      filtered.forEach(helper => {
+        const record = dayRecords[helper.id] || { status: 'P', otHours: 0 };
+        const status = record.status || 'P';
+        const otHours = record.otHours || 0;
+
+        // Status pill classes
+        const isPresent = status === 'P';
+        const isHalf = status === 'H';
+        const isAbsent = status === 'A';
+
+        html += `
+          <div class="p-3.5 sm:p-4 hover:bg-slate-50 transition flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                isPresent ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                isHalf ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                'bg-rose-100 text-rose-800 border border-rose-300'
+              }">
+                ${helper.name.charAt(0)}
+              </div>
+              <div>
+                <div class="flex items-center gap-2">
+                  <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(helper.name)}</h4>
+                  <span class="text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">${escapeHtml(helper.role || 'કારીગર')}</span>
+                </div>
+                <div class="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
+                  <span>રોજ: <strong class="text-slate-800 font-semibold">₹${helper.wage}</strong></span>
+                  ${helper.phone ? `<span>• <i class="ph-bold ph-phone text-[10px]"></i> ${escapeHtml(helper.phone)}</span>` : ''}
+                </div>
+              </div>
+            </div>
+
+            <!-- Action buttons (Present, Half, Absent, Overtime) -->
+            <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+              <div class="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200">
+                <button onclick="setHelperAttendance('${helper.id}', 'P')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  isPresent ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }">
+                  <i class="ph-bold ph-check"></i>
+                  <span>હાજર (Full)</span>
+                </button>
+
+                <button onclick="setHelperAttendance('${helper.id}', 'H')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  isHalf ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }">
+                  <i class="ph-bold ph-circle-half"></i>
+                  <span>અડધો રોજ (Half)</span>
+                </button>
+
+                <button onclick="setHelperAttendance('${helper.id}', 'A')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                  isAbsent ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                }">
+                  <i class="ph-bold ph-x"></i>
+                  <span>રજા (Absent)</span>
+                </button>
+              </div>
+
+              <!-- Overtime Input -->
+              <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200" title="ઓવરટાઇમ કલાકો">
+                <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">OT કલાક:</span>
+                <input type="number" step="0.5" min="0" max="16" value="${otHours}" onchange="updateHelperOT('${helper.id}', this.value)" class="w-12 bg-white text-center font-bold text-xs py-1 border border-slate-300 rounded-lg outline-none focus:border-amber-500">
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      if (filtered.length === 0) {
+        html = `<div class="p-8 text-center text-slate-400 text-xs">કોઈ કારીગર મળ્યો નથી. (No matches found)</div>`;
+      }
+
+      container.innerHTML = html;
+      renderDailyAttendanceCounters();
+    }
+
+    function renderDailyAttendanceCounters() {
+      const dayRecords = getAttendanceForDate(state.selectedDate);
+      let pres = 0, half = 0, abs = 0;
+      state.helpers.forEach(h => {
+        const r = dayRecords[h.id] || { status: 'P' };
+        if (r.status === 'P') pres++;
+        else if (r.status === 'H') half++;
+        else if (r.status === 'A') abs++;
+      });
+
+      document.getElementById('metricTotal').innerText = state.helpers.length;
+      document.getElementById('metricPresent').innerText = pres;
+      document.getElementById('metricHalf').innerText = half;
+      document.getElementById('metricAbsent').innerText = abs;
+      document.getElementById('badgeTotalHelpers').innerText = state.helpers.length;
+    }
+
+    // ==========================================
+    // MONTHLY LEDGER / ROJ-MEDA (ખાતાવહી)
+    // ==========================================
+
+    function onMonthChanged(newMonth) {
+      state.selectedMonth = newMonth;
+      renderMonthlyLedger();
+    }
+
+    function resetToCurrentMonth() {
+      const cur = formatMonthToISO(new Date());
+      state.selectedMonth = cur;
+      document.getElementById('selectedMonthInput').value = cur;
+      renderMonthlyLedger();
+    }
+
+    function getDaysInMonth(year, monthIndex) {
+      return new Date(year, monthIndex + 1, 0).getDate();
+    }
+
+    function renderMonthlyLedger() {
+      const [yearStr, monthStr] = state.selectedMonth.split('-');
+      const year = parseInt(yearStr, 10);
+      const monthIdx = parseInt(monthStr, 10) - 1;
+      const totalDays = getDaysInMonth(year, monthIdx);
+
+      // Construct Header
+      const headerRow = document.getElementById('monthlyGridHeader');
+      let headerHtml = `
+        <th class="p-2.5 sticky left-0 bg-slate-100 z-10 min-w-[150px] shadow-[1px_0_0_0_#e2e8f0]">કારીગર (Helper)</th>
+        <th class="p-2.5 text-center min-w-[65px]">દૈનિક રોજ</th>
+      `;
+
+      for (let d = 1; d <= totalDays; d++) {
+        headerHtml += `<th class="p-1 text-center font-bold text-[11px] min-w-[28px]">${d}</th>`;
+      }
+
+      headerHtml += `
+        <th class="p-2.5 text-center font-bold bg-slate-200/60 min-w-[80px]">હાજર દિવસ</th>
+        <th class="p-2.5 text-right font-bold bg-slate-200/60 min-w-[85px]">કુલ મજૂરી</th>
+        <th class="p-2.5 text-right font-bold text-rose-700 bg-rose-50/70 min-w-[85px]">ઉપાડ (Adv)</th>
+        <th class="p-2.5 text-right font-bold text-emerald-800 bg-emerald-50 min-w-[95px]">ચૂકવવા પાત્ર</th>
+        <th class="p-2 text-center min-w-[50px] no-print">સ્લિપ</th>
+      `;
+      headerRow.innerHTML = headerHtml;
+
+      // Construct Body
+      const body = document.getElementById('monthlyGridBody');
+      let bodyHtml = '';
+
+      let grandTotalEffectiveDays = 0;
+      let grandTotalGrossWages = 0;
+      let grandTotalAdvances = 0;
+      let grandTotalNet = 0;
+
+      state.helpers.forEach(helper => {
+        let effectiveDays = 0;
+        let totalOtHours = 0;
+
+        let daysCells = '';
+        for (let d = 1; d <= totalDays; d++) {
+          const dateStr = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
+          const rec = state.attendance[dateStr] ? state.attendance[dateStr][helper.id] : null;
+          
+          let cellText = '-';
+          let cellClass = 'text-slate-300';
+
+          if (rec) {
+            if (rec.status === 'P') {
+              effectiveDays += 1;
+              cellText = 'P';
+              cellClass = 'bg-emerald-50 text-emerald-700 font-bold';
+            } else if (rec.status === 'H') {
+              effectiveDays += 0.5;
+              cellText = '½';
+              cellClass = 'bg-amber-100 text-amber-800 font-bold';
+            } else if (rec.status === 'A') {
+              cellText = 'A';
+              cellClass = 'bg-rose-50 text-rose-600 font-bold';
+            }
+
+            if (rec.otHours > 0) {
+              totalOtHours += rec.otHours;
+              cellText += `*`;
+            }
+          }
+
+          daysCells += `<td class="p-1 text-center border-l border-slate-100 ${cellClass}" title="Day ${d}: ${cellText}">${cellText}</td>`;
+        }
+
+        // Wage calculations: Hourly rate approximation = Daily wage / 8
+        const hourlyRate = helper.wage / 8;
+        const otWage = Math.round(totalOtHours * hourlyRate);
+        const baseWage = Math.round(effectiveDays * helper.wage);
+        const grossWages = baseWage + otWage;
+
+        // Sum advances for this helper in this month
+        const helperAdvances = state.advances
+          .filter(a => a.helperId === helper.id && a.date.startsWith(state.selectedMonth))
+          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+
+        const netPayable = grossWages - helperAdvances;
+
+        grandTotalEffectiveDays += effectiveDays;
+        grandTotalGrossWages += grossWages;
+        grandTotalAdvances += helperAdvances;
+        grandTotalNet += netPayable;
+
+        bodyHtml += `
+          <tr class="hover:bg-slate-50/70 transition border-b border-slate-100">
+            <td class="p-2.5 font-bold sticky left-0 bg-white shadow-[1px_0_0_0_#e2e8f0]">
+              <div class="truncate max-w-[140px] text-slate-800" title="${escapeHtml(helper.name)}">${escapeHtml(helper.name)}</div>
+              <div class="text-[10px] text-slate-400 font-normal">${escapeHtml(helper.role || 'Worker')}</div>
+            </td>
+            <td class="p-2 text-center font-semibold text-slate-600">₹${helper.wage}</td>
+            ${daysCells}
+            <td class="p-2 text-center font-bold bg-slate-50 text-slate-800">${effectiveDays.toFixed(1)}${totalOtHours > 0 ? `<div class="text-[10px] text-amber-600">+${totalOtHours}h OT</div>` : ''}</td>
+            <td class="p-2 text-right font-bold text-slate-900 bg-slate-50">₹${grossWages.toLocaleString('en-IN')}</td>
+            <td class="p-2 text-right font-bold text-rose-600 bg-rose-50/30">₹${helperAdvances.toLocaleString('en-IN')}</td>
+            <td class="p-2 text-right font-black ${netPayable < 0 ? 'text-rose-600' : 'text-emerald-700'} bg-emerald-50/30">
+              ₹${netPayable.toLocaleString('en-IN')}
+            </td>
+            <td class="p-2 text-center no-print">
+              <button onclick="openPayslipModal('${helper.id}', ${effectiveDays}, ${grossWages}, ${helperAdvances}, ${netPayable}, ${totalOtHours})" class="p-1 hover:bg-slate-200 text-slate-600 rounded transition" title="Print Slip">
+                <i class="ph-bold ph-receipt text-base"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+
+      if (state.helpers.length === 0) {
+        bodyHtml = `<tr><td colspan="${totalDays + 6}" class="p-8 text-center text-slate-400">કારીગરો ઉમેર્યા પછી હિસાબ દેખાશે.</td></tr>`;
+      }
+
+      body.innerHTML = bodyHtml;
+
+      // Update Summary Ribbons
+      document.getElementById('monthStatTotalDays').innerText = grandTotalEffectiveDays.toFixed(1);
+      document.getElementById('monthStatGrossWages').innerText = `₹${grandTotalGrossWages.toLocaleString('en-IN')}`;
+      document.getElementById('monthStatTotalUpaad').innerText = `₹${grandTotalAdvances.toLocaleString('en-IN')}`;
+      document.getElementById('monthStatNetPayable').innerText = `₹${grandTotalNet.toLocaleString('en-IN')}`;
+
+      renderAdvanceEntriesTable();
+    }
+
+    function renderMonthlyLedgerSummaryStats() {
+      // Light update if needed without full dom redraw
+      if (state.currentTab === 'ledger') {
+        renderMonthlyLedger();
+      }
+    }
+
+    function renderAdvanceEntriesTable() {
+      const tbody = document.getElementById('advanceEntriesTableBody');
+      const filtered = state.advances
+        .filter(a => a.date.startsWith(state.selectedMonth))
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400 text-xs">આ મહિનામાં કોઈ ઉપાડ નોંધાયેલ નથી (No advance records for this month)</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        const helper = state.helpers.find(h => h.id === item.helperId) || { name: 'અજ્ઞાત (Deleted)' };
+        html += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-2.5 font-medium text-slate-700">${item.date}</td>
+            <td class="p-2.5 font-bold text-slate-800">${escapeHtml(helper.name)}</td>
+            <td class="p-2.5 font-bold text-rose-600">₹${Number(item.amount).toLocaleString('en-IN')}</td>
+            <td class="p-2.5 text-slate-500">${escapeHtml(item.remark || '-')}</td>
+            <td class="p-2.5 text-right">
+              <button onclick="deleteAdvance('${item.id}')" class="text-rose-500 hover:text-rose-700 p-1" title="ડિલીટ કરો">
+                <i class="ph-bold ph-trash"></i>
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // ==========================================
+    // HELPERS LIST (કારીગર ડિરેક્ટરી)
+    // ==========================================
+
+    function renderHelpersList() {
+      const container = document.getElementById('helpersCardsContainer');
+      if (state.helpers.length === 0) {
+        container.innerHTML = `
+          <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-200">
+            <p class="text-slate-500 font-medium">કોઈ કારીગર નથી. નવો ઉમેરો.</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      state.helpers.forEach(h => {
+        // Quick monthly calculation for card preview
+        const daysInMonth = getDaysInMonth(new Date().getFullYear(), new Date().getMonth());
+        let monthDays = 0;
+        const curM = formatMonthToISO(new Date());
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dStr = `${curM}-${String(d).padStart(2, '0')}`;
+          if (state.attendance[dStr] && state.attendance[dStr][h.id]) {
+            const st = state.attendance[dStr][h.id].status;
+            if (st === 'P') monthDays += 1;
+            else if (st === 'H') monthDays += 0.5;
+          }
+        }
+
+        const totalAdv = state.advances
+          .filter(a => a.helperId === h.id && a.date.startsWith(curM))
+          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+
+        const estWage = (monthDays * h.wage) - totalAdv;
+
+        html += `
+          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow transition flex flex-col justify-between">
+            <div>
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="font-bold text-slate-900 text-base">${escapeHtml(h.name)}</h3>
+                  <p class="text-xs text-amber-600 font-semibold mt-0.5">${escapeHtml(h.role || 'જનરલ કારીગર')}</p>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="openEditHelperModal('${h.id}')" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="એડિટ">
+                    <i class="ph-bold ph-pencil-simple text-base"></i>
+                  </button>
+                  <button onclick="confirmDeleteHelper('${h.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="ડિલીટ">
+                    <i class="ph-bold ph-trash text-base"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">દૈનિક રોજ (Daily Roj):</span>
+                  <span class="font-black text-slate-800 text-sm">₹${h.wage} / દિવસ</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">મોબાઈલ:</span>
+                  <span class="font-semibold text-slate-700">${escapeHtml(h.phone || '-')}</span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <span class="text-slate-500">જોડાયા તારીખ:</span>
+                  <span class="text-slate-600">${h.joiningDate || '-'}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Month snapshot on card -->
+            <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
+              <div class="flex items-center justify-between text-slate-600 mb-1">
+                <span>ચાલુ મહિનાના દિવસ:</span>
+                <span class="font-bold text-emerald-700">${monthDays.toFixed(1)} દિવસ</span>
+              </div>
+              <div class="flex items-center justify-between text-slate-600">
+                <span>અંદાજિત બાકી રકમ:</span>
+                <span class="font-bold ${estWage < 0 ? 'text-rose-600' : 'text-slate-900'}">₹${estWage.toLocaleString('en-IN')}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // ==========================================
+    // MODAL ACTIONS (HELPER, ADVANCE, PAYSLIP)
+    // ==========================================
+
+    function openAddHelperModal() {
+      document.getElementById('helperModalTitle').innerText = 'નવો હેલ્પર ઉમેરો (Add Helper)';
+      document.getElementById('helperFormId').value = '';
+      document.getElementById('helperName').value = '';
+      document.getElementById('helperWage').value = '450';
+      document.getElementById('helperRole').value = '';
+      document.getElementById('helperPhone').value = '';
+      document.getElementById('helperJoining').value = formatDateToISO(new Date());
+      document.getElementById('helperModal').classList.remove('hidden');
+    }
+
+    function openEditHelperModal(helperId) {
+      const helper = state.helpers.find(h => h.id === helperId);
+      if (!helper) return;
+
+      document.getElementById('helperModalTitle').innerText = 'કારીગર વિગત સુધારો (Edit Helper)';
+      document.getElementById('helperFormId').value = helper.id;
+      document.getElementById('helperName').value = helper.name;
+      document.getElementById('helperWage').value = helper.wage;
+      document.getElementById('helperRole').value = helper.role || '';
+      document.getElementById('helperPhone').value = helper.phone || '';
+      document.getElementById('helperJoining').value = helper.joiningDate || '';
+      document.getElementById('helperModal').classList.remove('hidden');
+    }
+
+    function closeHelperModal() {
+      document.getElementById('helperModal').classList.add('hidden');
+    }
+
+    function saveHelper(e) {
+      e.preventDefault();
+      const id = document.getElementById('helperFormId').value;
+      const name = document.getElementById('helperName').value.trim();
+      const wage = parseFloat(document.getElementById('helperWage').value) || 0;
+      const role = document.getElementById('helperRole').value.trim();
+      const phone = document.getElementById('helperPhone').value.trim();
+      const joiningDate = document.getElementById('helperJoining').value;
+
+      if (!name || wage <= 0) {
+        showToast('કૃપા કરી નામ અને યોગ્ય રોજ દાખલ કરો', 'error');
+        return;
+      }
+
+      if (id) {
+        // Edit
+        const idx = state.helpers.findIndex(h => h.id === id);
+        if (idx !== -1) {
+          state.helpers[idx] = { ...state.helpers[idx], name, wage, role, phone, joiningDate };
+          showToast('કારીગર અપડેટ થયો', 'success');
+        }
+      } else {
+        // New
+        const newHelper = {
+          id: 'h_' + Date.now(),
+          name,
+          wage,
+          role,
+          phone,
+          joiningDate
+        };
+        state.helpers.push(newHelper);
+        showToast('નવો કારીગર ઉમેરાયો', 'success');
+      }
+
+      saveToStorage(false);
+      closeHelperModal();
+      renderAll();
+    }
+
+    function confirmDeleteHelper(helperId) {
+      const helper = state.helpers.find(h => h.id === helperId);
+      if (!helper) return;
+
+      // In-app modal confirmation
+      if (window.confirm(`શું તમે ખરેખર "${helper.name}" ને કાઢી નાખવા માંગો છો? આનાથી તેમની હાજરી પણ દૂર થશે.`)) {
+        state.helpers = state.helpers.filter(h => h.id !== helperId);
+        state.advances = state.advances.filter(a => a.helperId !== helperId);
+        saveToStorage(true);
+        renderAll();
+        showToast('કારીગર દૂર કરવામાં આવ્યો', 'info');
+      }
+    }
+
+    // Advance Modal
+    function openAddAdvanceModal() {
+      const select = document.getElementById('advanceHelperSelect');
+      select.innerHTML = state.helpers.map(h => `<option value="${h.id}">${escapeHtml(h.name)} (રોજ ₹${h.wage})</option>`).join('');
+
+      document.getElementById('advanceDate').value = state.selectedDate;
+      document.getElementById('advanceAmount').value = '';
+      document.getElementById('advanceRemark').value = '';
+      document.getElementById('advanceModal').classList.remove('hidden');
+    }
+
+    function closeAdvanceModal() {
+      document.getElementById('advanceModal').classList.add('hidden');
+    }
+
+    function saveAdvance(e) {
+      e.preventDefault();
+      const helperId = document.getElementById('advanceHelperSelect').value;
+      const date = document.getElementById('advanceDate').value;
+      const amount = parseFloat(document.getElementById('advanceAmount').value);
+      const remark = document.getElementById('advanceRemark').value.trim();
+
+      if (!helperId || !date || !amount || amount <= 0) {
+        showToast('કૃપા કરી માન્ય રકમ દાખલ કરો', 'error');
+        return;
+      }
+
+      state.advances.push({
+        id: 'adv_' + Date.now(),
+        helperId,
+        date,
+        amount,
+        remark
+      });
+
+      saveToStorage(true);
+      closeAdvanceModal();
+      renderMonthlyLedger();
+      showToast('ઉપાડની નોંધણી થઈ ગઈ (Advance Added)', 'success');
+    }
+
+    function deleteAdvance(advanceId) {
+      if (window.confirm('આ ઉપાડ એન્ટ્રી રદ કરવી છે?')) {
+        state.advances = state.advances.filter(a => a.id !== advanceId);
+        saveToStorage(true);
+        renderMonthlyLedger();
+        showToast('ઉપાડ એન્ટ્રી રદ કરી', 'info');
+      }
+    }
+
+    // Payslip Modal
+    function openPayslipModal(helperId, days, gross, advance, net, otHours) {
+      const helper = state.helpers.find(h => h.id === helperId);
+      if (!helper) return;
+
+      const [year, month] = state.selectedMonth.split('-');
+      const monthDate = new Date(year, month - 1, 1);
+      const monthName = monthDate.toLocaleDateString('gu-IN', { month: 'long', year: 'numeric' });
+
+      const content = `
+        <div class="border-2 border-slate-800 rounded-xl p-5 bg-white space-y-4">
+          <div class="text-center border-b pb-3 border-slate-300">
+            <h2 class="text-lg font-black tracking-wide uppercase text-slate-900">શ્રી ગણેશ એન્ટરપ્રાઇઝ / કારખાનું</h2>
+            <p class="text-xs text-slate-500 font-medium">માસિક પગાર અને હિસાબ રસીદ (Salary Voucher)</p>
+            <p class="text-xs font-bold text-amber-700 mt-1">${monthName}</p>
+          </div>
+
+          <div class="grid grid-cols-2 text-xs gap-2 py-1">
+            <div><strong>કારીગર:</strong> ${escapeHtml(helper.name)}</div>
+            <div><strong>કામ/વિભાગ:</strong> ${escapeHtml(helper.role || 'જનરલ')}</div>
+            <div><strong>મોબાઇલ:</strong> ${escapeHtml(helper.phone || '-')}</div>
+            <div><strong>દૈનિક રોજ:</strong> ₹${helper.wage}</div>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
+            <div class="flex justify-between">
+              <span>હાજર દિવસો (Effective Days):</span>
+              <span class="font-bold">${days.toFixed(1)} દિવસ</span>
+            </div>
+            ${otHours > 0 ? `
+              <div class="flex justify-between text-amber-800">
+                <span>ઓવરટાઇમ કલાકો (${otHours} કલાક):</span>
+                <span class="font-bold">+ ₹${Math.round(otHours * (helper.wage / 8))}</span>
+              </div>
+            ` : ''}
+            <div class="flex justify-between border-t border-slate-200 pt-1 font-semibold">
+              <span>કુલ બનતી મજૂરી (Gross Wage):</span>
+              <span>₹${gross.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="flex justify-between text-rose-600 font-semibold">
+              <span>કુલ લીધેલ ઉપાડ (Less Advance):</span>
+              <span>- ₹${advance.toLocaleString('en-IN')}</span>
+            </div>
+            <div class="flex justify-between text-sm font-black border-t-2 border-slate-800 pt-2 text-slate-900">
+              <span>ચૂકવવા પાત્ર ચોખ્ખી રકમ (Net Payable):</span>
+              <span class="text-emerald-700">₹${net.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-end pt-8 text-[11px] text-slate-500">
+            <div>
+              <div class="w-28 border-b border-slate-400 mb-1"></div>
+              <span>કારીગરની સહી / અંગૂઠો</span>
+            </div>
+            <div class="text-right">
+              <div class="w-28 border-b border-slate-400 mb-1 ml-auto"></div>
+              <span>શેઠ / મેનેજર સહી</span>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('payslipContent').innerHTML = content;
+      document.getElementById('payslipModal').classList.remove('hidden');
+    }
+
+    function closePayslipModal() {
+      document.getElementById('payslipModal').classList.add('hidden');
+    }
+
+    function printElement(elementId) {
+      const content = document.getElementById(elementId).innerHTML;
+      const win = window.open('', '', 'height=600,width=800');
+      win.document.write('<html><head><title>Print Voucher</title>');
+      win.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+      win.document.write('</head><body class="p-8">');
+      win.document.write(content);
+      win.document.write('</body></html>');
+      win.document.close();
+      win.focus();
+      setTimeout(() => {
+        win.print();
+        win.close();
+      }, 500);
+    }
+
+    // ==========================================
+    // EXPORT FEATURES
+    // ==========================================
+
+    function exportMonthlyCSV() {
+      const [yearStr, monthStr] = state.selectedMonth.split('-');
+      const year = parseInt(yearStr, 10);
+      const monthIdx = parseInt(monthStr, 10) - 1;
+      const totalDays = getDaysInMonth(year, monthIdx);
+
+      let csv = [];
+      // CSV Header
+      let headers = ['Helper Name', 'Role', 'Daily Wage'];
+      for (let d = 1; d <= totalDays; d++) headers.push(`Day ${d}`);
+      headers.push('Effective Days', 'Gross Wage (INR)', 'Advance (INR)', 'Net Payable (INR)');
+      csv.push(headers.map(h => `"${h}"`).join(','));
+
+      // CSV Rows
+      state.helpers.forEach(h => {
+        let effectiveDays = 0;
+        let totalOt = 0;
+        let row = [`"${h.name}"`, `"${h.role || ''}"`, h.wage];
+
+        for (let d = 1; d <= totalDays; d++) {
+          const dateStr = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
+          const rec = state.attendance[dateStr] ? state.attendance[dateStr][h.id] : null;
+          let val = '-';
+          if (rec) {
+            val = rec.status;
+            if (rec.status === 'P') effectiveDays += 1;
+            if (rec.status === 'H') effectiveDays += 0.5;
+            if (rec.otHours > 0) totalOt += rec.otHours;
+          }
+          row.push(`"${val}"`);
+        }
+
+        const hourly = h.wage / 8;
+        const gross = Math.round((effectiveDays * h.wage) + (totalOt * hourly));
+        const adv = state.advances
+          .filter(a => a.helperId === h.id && a.date.startsWith(state.selectedMonth))
+          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
+        const net = gross - adv;
+
+        row.push(effectiveDays.toFixed(1), gross, adv, net);
+        csv.push(row.join(','));
+      });
+
+      const blob = new Blob(["\uFEFF" + csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `karkhana_hajri_${state.selectedMonth}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('CSV ડાઉનલોડ શરૂ થઈ ગઈ', 'success');
+    }
+
+    function exportDataBackup() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+        helpers: state.helpers,
+        attendance: state.attendance,
+        advances: state.advances,
+        exportDate: new Date().toISOString()
+      }, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `karkhana_backup_${formatDateToISO(new Date())}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('સંપૂર્ણ બેકઅપ ડાઉનલોડ થઈ ગયું', 'success');
+    }
+
+    // Toast alerts
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let bg = 'bg-slate-900 text-white';
+      if (type === 'success') bg = 'bg-emerald-600 text-white';
+      if (type === 'error') bg = 'bg-rose-600 text-white';
+
+      toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 pointer-events-auto transform transition duration-200 translate-y-2 opacity-0`;
+      toast.innerHTML = `<i class="ph-bold ${type === 'success' ? 'ph-check-circle' : 'ph-info'} text-base"></i><span>${escapeHtml(message)}</span>`;
+      
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      }, 20);
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 250);
+      }, 2800);
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Initialize application when DOM ready
+    window.onload = function() {
+      init();
+    };
+  </script>
+</body>
+</html>
