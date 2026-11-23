@@ -253,7 +253,7 @@
           </div>
           <div>
             <h1 class="text-base sm:text-lg font-extrabold tracking-tight leading-none">સેન્ચ્યુરી પ્રોડક્ટ</h1>
-            <p class="text-[11px] text-amber-400 font-semibold mt-0.5">સેન્ચ્યુરી કારખાનું &bull; મેનેજમેન્ટ</p>
+            <p class="text-[11px] text-amber-400 font-semibold mt-0.5">સેન્ચ્યુરી કારખાનું &bull; મલ્ટી-યુઝર લાઇવ</p>
           </div>
         </div>
 
@@ -276,8 +276,12 @@
           </button>
         </nav>
 
-        <!-- Active Login Badge & Logout Button -->
+        <!-- Cloud Sync Status, Active Login Badge & Logout Button -->
         <div class="flex items-center gap-2">
+          <div id="cloud-sync-badge" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-[11px] font-bold text-amber-300" title="એકસાથે બધા મોબાઇલમાં લાઇવ ડેટા સિંક">
+            <span id="cloud-sync-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
+            <span id="cloud-sync-label">લાઇવ ક્લાઉડ કનેક્ટ...</span>
+          </div>
           <div id="active-user-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-emerald-400">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span id="active-user-label">admin</span>
@@ -813,6 +817,34 @@
       <!-- PAGE E: SAVED RECORDS, LOGIN LOGS & ADMIN FULL EDIT/DELETE        -->
       <!-- ================================================================= -->
       <section id="page-records" class="hidden space-y-6">
+        <!-- Multi-User Live Cloud Sync Banner -->
+        <div class="bg-slate-900 text-white border-2 border-amber-500/60 rounded-2xl p-5 sm:p-6 shadow-md">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500 text-slate-950 text-xs font-extrabold mb-2">
+                મલ્ટી-યુઝર લાઇવ એક્સેસ (એકસાથે બધા ફોનમાં ચાલશે)
+              </span>
+              <h3 class="text-lg font-extrabold text-white">એકસાથે ઘણા લોકો આ એપ વાપરી શકે તે માટે શેર લિંક</h3>
+              <p class="text-xs sm:text-sm text-slate-300 mt-1">
+                આ એપ લાઇવ ક્લાઉડ ડેટાબેઝ સાથે જોડાયેલી છે. જ્યારે માલિક, મેનેજર કે સુપરવાઇઝર અલગ-અલગ ફોનમાંથી લોગિન કરશે, ત્યારે બધાને એક જ લાઇવ હાજરી, કારીગરો અને નોંધ દેખાશે.
+              </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                id="copy-app-link-btn"
+                class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs transition cursor-pointer"
+              >
+                📋 એપ લિંક કોપી કરો (બધાને મોકલો)
+              </button>
+            </div>
+          </div>
+          <div class="mt-3 pt-3 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400">
+            <span>ક્લાઉડ સિંક સ્ટેટસ: <strong id="records-cloud-status" class="text-emerald-400">લાઇવ ક્લાઉડ સિંક ચાલુ છે</strong></span>
+            <span>સેશન ID: <code id="records-device-uid" class="text-amber-300 font-mono">-</code></span>
+          </div>
+        </div>
+
         <!-- Header & Backup / Restore Controls -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -1026,27 +1058,29 @@
   <div id="pdf-offscreen-sandbox" style="position: fixed; left: -12000px; top: 0; width: 794px; background: #ffffff; z-index: -1;"></div>
 
   <!-- ===================================================================== -->
-  <!-- APPLICATION JAVASCRIPT (State, LocalStorage, Wage Calculation, UI)    -->
+  <!-- APPLICATION JAVASCRIPT (Firebase Cloud Sync + Multi-User Real-Time)   -->
   <!-- ===================================================================== -->
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
     (function () {
       'use strict';
 
       // -------------------------------------------------------------------
-      // 1. CONSTANTS & LOCALSTORAGE KEYS
+      // 1. CONSTANTS, FIREBASE INITIALIZATION & SHARED CLOUD PATHS
       // -------------------------------------------------------------------
       const ADMIN_ID = 'admin';
       const ADMIN_PASS = 'admin@123';
 
-      const STORAGE_KEYS = {
-        AUTH: 'cp_karkhano_gu_auth_v2',
-        CURRENT_USER: 'cp_karkhano_gu_user_v2',
-        WORKERS: 'cp_karkhano_gu_workers_v2',
-        ATTENDANCE: 'cp_karkhano_gu_attendance_v2',
-        NOTES: 'cp_karkhano_gu_notes_v2',
-        LOGS: 'cp_karkhano_gu_logs_v2',
-        LAST_SAVED: 'cp_karkhano_gu_last_saved_v2',
-      };
+      const appId = typeof __app_id !== 'undefined' ? __app_id : 'century-product-karkhano-live';
+      const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+
+      let db = null;
+      let auth = null;
+      let cloudUser = null;
+      let cloudReady = false;
 
       // Helper: Returns today's date in YYYY-MM-DD local timezone
       function getTodayISO() {
@@ -1127,7 +1161,7 @@
       }
 
       // -------------------------------------------------------------------
-      // 2. APPLICATION STATE & SEED DATA
+      // 2. SHARED MULTI-USER IN-MEMORY STATE + CLOUD REAL-TIME LISTENERS
       // -------------------------------------------------------------------
       let state = {
         isAuthenticated: false,
@@ -1138,121 +1172,308 @@
         noteFilterCategory: 'All',
         noteSearchQuery: '',
         workers: [],
-        // attendance structure: { "YYYY-MM-DD": { "workerId": { status: "P"|"H"|"A"|"", otHours: number } } }
         attendance: {},
         notes: [],
         logs: [],
-        lastSavedAt: '',
+        lastSavedAt: getGujaratiTimestamp(),
       };
 
-      function recordAuditLog(actionType, detailText) {
+      function updateCloudBadgeUI(isConnected, labelText) {
+        const dot = document.getElementById('cloud-sync-dot');
+        const label = document.getElementById('cloud-sync-label');
+        const recStatus = document.getElementById('records-cloud-status');
+        const recUid = document.getElementById('records-device-uid');
+
+        if (dot) {
+          dot.className = isConnected
+            ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
+            : 'w-2 h-2 rounded-full bg-amber-400';
+        }
+        if (label) label.textContent = labelText;
+        if (recStatus) recStatus.textContent = labelText;
+        if (recUid && cloudUser) recUid.textContent = cloudUser.uid;
+      }
+
+      function refreshActiveView() {
+        if (!state.isAuthenticated) return;
+        if (state.activeTab === 'dashboard') renderDashboard();
+        if (state.activeTab === 'attendance') renderAttendancePage();
+        if (state.activeTab === 'monthly') renderMonthlyPage();
+        if (state.activeTab === 'notes') renderNotesPage();
+        if (state.activeTab === 'records') renderRecordsPage();
+      }
+
+      // Firestore Public Shared Collection Helpers (Rule 1: /artifacts/{appId}/public/data/{collectionName})
+      function getSharedCol(collectionName) {
+        return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
+      }
+
+      function getSharedDoc(collectionName, docId) {
+        return doc(db, 'artifacts', appId, 'public', 'data', collectionName, docId);
+      }
+
+      async function recordAuditLog(actionType, detailText) {
+        const logId = 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
         const entry = {
-          id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          id: logId,
           user: state.currentUser || ADMIN_ID,
           action: actionType,
           detail: detailText,
           timestamp: getGujaratiTimestamp(),
+          createdAtMs: Date.now(),
         };
         state.logs.unshift(entry);
         if (state.logs.length > 150) {
           state.logs = state.logs.slice(0, 150);
         }
         state.lastSavedAt = entry.timestamp;
+
+        if (!cloudReady || !cloudUser) return;
         try {
-          localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(state.logs));
-          localStorage.setItem(STORAGE_KEYS.LAST_SAVED, state.lastSavedAt);
-        } catch (e) {
-          console.error('Error saving logs:', e);
-        }
-      }
-
-      function loadState() {
-        try {
-          state.isAuthenticated = localStorage.getItem(STORAGE_KEYS.AUTH) === 'true';
-          state.currentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || ADMIN_ID;
-          state.lastSavedAt = localStorage.getItem(STORAGE_KEYS.LAST_SAVED) || getGujaratiTimestamp();
-
-          const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
-          state.logs = savedLogs ? JSON.parse(savedLogs) : [];
-
-          const savedWorkers = localStorage.getItem(STORAGE_KEYS.WORKERS);
-          if (savedWorkers) {
-            state.workers = JSON.parse(savedWorkers);
-          } else {
-            // Seed 3 realistic Gujarati workers with different daily & overtime rates
-            state.workers = [
-              { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100 },
-              { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75 },
-              { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60 },
-            ];
-            localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
-          }
-
-          const savedAttendance = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
-          if (savedAttendance) {
-            state.attendance = JSON.parse(savedAttendance);
-          } else {
-            const today = getTodayISO();
-            state.attendance[today] = {
-              w_101: { status: 'P', otHours: 2 },
-              w_102: { status: 'P', otHours: 1.5 },
-              w_103: { status: 'H', otHours: 0 },
-            };
-            localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
-          }
-
-          const savedNotes = localStorage.getItem(STORAGE_KEYS.NOTES);
-          if (savedNotes) {
-            state.notes = JSON.parse(savedNotes);
-          } else {
-            state.notes = [
-              {
-                id: 'n_1',
-                title: 'આજનો ઉત્પાદન ટાર્ગેટ (બેચ #42)',
-                category: 'ઉત્પાદન',
-                content: 'સાંજે 5:00 વાગ્યા સુધીમાં સેન્ચ્યુરી હેવી મિજાગરાના 250 નંગ તૈયાર કરવાના છે. દરેક 50 નંગ પછી માપ ચેક કરવું.',
-                updatedAt: getGujaratiTimestamp(),
-              },
-              {
-                id: 'n_2',
-                title: 'કાચા માલનો ઓર્ડર — CRC શીટ',
-                category: 'માલ / સ્ટોક',
-                content: 'અંબિકા સ્ટીલ ટ્રેડર્સ પાસેથી 2 ટન 16-ગેજ CRC શીટ ગુરુવારે સવારે 9 વાગ્યે મંગાવવાની છે.',
-                updatedAt: getGujaratiTimestamp(),
-              },
-            ];
-            localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
-          }
+          await setDoc(getSharedDoc('karkhano_logs', logId), entry);
         } catch (err) {
-          console.error('Error loading localStorage:', err);
+          console.error('Audit log cloud write error:', err);
         }
       }
 
-      function saveWorkers(logDetail) {
+      async function initCloudSync() {
+        if (!rawFirebaseConfig) {
+          updateCloudBadgeUI(false, 'ઓફલાઇન મોડ (Config નથી)');
+          seedDefaultLocalDataIfEmpty();
+          return;
+        }
+
         try {
-          localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
-          if (logDetail) recordAuditLog('કારીગર ફેરફાર', logDetail);
-        } catch (e) {
-          showToast('કારીગરની માહિતી સેવ થઈ શકી નથી.', 'error');
+          const firebaseConfig = typeof rawFirebaseConfig === 'string'
+            ? JSON.parse(rawFirebaseConfig)
+            : rawFirebaseConfig;
+
+          const app = initializeApp(firebaseConfig);
+          db = getFirestore(app);
+          auth = getAuth(app);
+
+          // Rule 3: Always authenticate BEFORE subscribing to any Firestore collection
+          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            const cred = await signInWithCustomToken(auth, __initial_auth_token);
+            cloudUser = cred.user;
+          } else {
+            const cred = await signInAnonymously(auth);
+            cloudUser = cred.user;
+          }
+
+          if (!cloudUser) return;
+          cloudReady = true;
+          updateCloudBadgeUI(true, 'લાઇવ ક્લાઉડ સિંક ચાલુ');
+
+          let initialWorkersLoaded = false;
+
+          // 1. Real-Time Workers Listener (Rule 2: simple collection query, sort in JS)
+          onSnapshot(
+            getSharedCol('karkhano_workers'),
+            async (snapshot) => {
+              const list = [];
+              snapshot.forEach((docSnap) => {
+                list.push({ id: docSnap.id, ...docSnap.data() });
+              });
+              list.sort((a, b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
+
+              if (!initialWorkersLoaded && list.length === 0) {
+                initialWorkersLoaded = true;
+                await seedInitialCloudData();
+                return;
+              }
+              initialWorkersLoaded = true;
+              state.workers = list;
+              state.lastSavedAt = getGujaratiTimestamp();
+              refreshActiveView();
+            },
+            (error) => {
+              console.error('Workers snapshot error:', error);
+              updateCloudBadgeUI(false, 'સિંક ભૂલ (ફરી પ્રયાસ કરો)');
+            }
+          );
+
+          // 2. Real-Time Daily Attendance Listener (1 document per YYYY-MM-DD date)
+          onSnapshot(
+            getSharedCol('karkhano_attendance'),
+            (snapshot) => {
+              const attMap = {};
+              snapshot.forEach((docSnap) => {
+                const data = docSnap.data();
+                attMap[docSnap.id] = data.records || {};
+              });
+              state.attendance = attMap;
+              state.lastSavedAt = getGujaratiTimestamp();
+              refreshActiveView();
+            },
+            (error) => {
+              console.error('Attendance snapshot error:', error);
+            }
+          );
+
+          // 3. Real-Time Notes Listener
+          onSnapshot(
+            getSharedCol('karkhano_notes'),
+            (snapshot) => {
+              const notesList = [];
+              snapshot.forEach((docSnap) => {
+                notesList.push({ id: docSnap.id, ...docSnap.data() });
+              });
+              notesList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+              state.notes = notesList;
+              state.lastSavedAt = getGujaratiTimestamp();
+              refreshActiveView();
+            },
+            (error) => {
+              console.error('Notes snapshot error:', error);
+            }
+          );
+
+          // 4. Real-Time Login & Activity Audit Logs Listener
+          onSnapshot(
+            getSharedCol('karkhano_logs'),
+            (snapshot) => {
+              const logsList = [];
+              snapshot.forEach((docSnap) => {
+                logsList.push({ id: docSnap.id, ...docSnap.data() });
+              });
+              logsList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+              state.logs = logsList.slice(0, 150);
+              refreshActiveView();
+            },
+            (error) => {
+              console.error('Logs snapshot error:', error);
+            }
+          );
+        } catch (err) {
+          console.error('Firebase initialization failed:', err);
+          updateCloudBadgeUI(false, 'ક્લાઉડ કનેક્શન નિષ્ફળ');
+          seedDefaultLocalDataIfEmpty();
         }
       }
 
-      function saveAttendance(logDetail) {
-        try {
-          localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
-          if (logDetail) recordAuditLog('હાજરી સેવ', logDetail);
-        } catch (e) {
-          showToast('હાજરી સેવ થઈ શકી નથી.', 'error');
-        }
+      function seedDefaultLocalDataIfEmpty() {
+        if (state.workers.length > 0) return;
+        state.workers = [
+          { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100, savedBy: 'admin', createdAtMs: 1 },
+          { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75, savedBy: 'admin', createdAtMs: 2 },
+          { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60, savedBy: 'admin', createdAtMs: 3 },
+        ];
       }
 
-      function saveNotes(logDetail) {
-        try {
-          localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
-          if (logDetail) recordAuditLog('નોંધ સેવ', logDetail);
-        } catch (e) {
-          showToast('નોંધ સેવ થઈ શકી નથી.', 'error');
+      async function seedInitialCloudData() {
+        if (!cloudReady || !cloudUser) return;
+        const defaultWorkers = [
+          { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100, savedBy: 'admin', createdAtMs: Date.now() + 1 },
+          { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75, savedBy: 'admin', createdAtMs: Date.now() + 2 },
+          { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60, savedBy: 'admin', createdAtMs: Date.now() + 3 },
+        ];
+        for (const w of defaultWorkers) {
+          await setDoc(getSharedDoc('karkhano_workers', w.id), w);
         }
+
+        const today = getTodayISO();
+        await setDoc(getSharedDoc('karkhano_attendance', today), {
+          date: today,
+          records: {
+            w_101: { status: 'P', otHours: 2, savedBy: 'admin' },
+            w_102: { status: 'P', otHours: 1.5, savedBy: 'admin' },
+            w_103: { status: 'H', otHours: 0, savedBy: 'admin' },
+          },
+        });
+
+        await setDoc(getSharedDoc('karkhano_notes', 'n_1'), {
+          id: 'n_1',
+          title: 'આજનો ઉત્પાદન ટાર્ગેટ (બેચ #42)',
+          category: 'ઉત્પાદન',
+          content: 'સાંજે 5:00 વાગ્યા સુધીમાં સેન્ચ્યુરી હેવી મિજાગરાના 250 નંગ તૈયાર કરવાના છે. દરેક 50 નંગ પછી માપ ચેક કરવું.',
+          updatedAt: getGujaratiTimestamp(),
+          savedBy: 'admin',
+          createdAtMs: Date.now(),
+        });
+      }
+
+      async function saveSingleWorkerToCloud(workerObj, logDetail) {
+        const idx = state.workers.findIndex((w) => w.id === workerObj.id);
+        if (idx !== -1) state.workers[idx] = workerObj;
+        else state.workers.push(workerObj);
+
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_workers', workerObj.id), workerObj);
+          } catch (e) {
+            showToast('ક્લાઉડમાં કારીગર સેવ થઈ શક્યા નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('કારીગર ફેરફાર', logDetail);
+      }
+
+      async function deleteWorkerFromCloud(workerId, logDetail) {
+        state.workers = state.workers.filter((w) => w.id !== workerId);
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_workers', workerId));
+          } catch (e) {
+            showToast('ક્લાઉડમાંથી કારીગર ડિલીટ થઈ શક્યા નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('કારીગર ફેરફાર', logDetail);
+      }
+
+      async function saveDateAttendanceToCloud(dateISO, logDetail) {
+        const dayRecords = state.attendance[dateISO] || {};
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_attendance', dateISO), {
+              date: dateISO,
+              records: dayRecords,
+              updatedAt: getGujaratiTimestamp(),
+              updatedBy: state.currentUser || ADMIN_ID,
+            });
+          } catch (e) {
+            showToast('ક્લાઉડમાં હાજરી સેવ થઈ શકી નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('હાજરી સેવ', logDetail);
+      }
+
+      async function deleteDateAttendanceFromCloud(dateISO, logDetail) {
+        delete state.attendance[dateISO];
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_attendance', dateISO));
+          } catch (e) {
+            showToast('ક્લાઉડમાંથી હાજરી ડિલીટ થઈ શકી નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('હાજરી સેવ', logDetail);
+      }
+
+      async function saveSingleNoteToCloud(noteObj, logDetail) {
+        const idx = state.notes.findIndex((n) => n.id === noteObj.id);
+        if (idx !== -1) state.notes[idx] = noteObj;
+        else state.notes.unshift(noteObj);
+
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_notes', noteObj.id), noteObj);
+          } catch (e) {
+            showToast('ક્લાઉડમાં નોંધ સેવ થઈ શકી નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('નોંધ સેવ', logDetail);
+      }
+
+      async function deleteNoteFromCloud(noteId, logDetail) {
+        state.notes = state.notes.filter((n) => n.id !== noteId);
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_notes', noteId));
+          } catch (e) {
+            showToast('ક્લાઉડમાંથી નોંધ ડિલીટ થઈ શકી નથી.', 'error');
+          }
+        }
+        if (logDetail) await recordAuditLog('નોંધ સેવ', logDetail);
       }
 
       // Helper: Normalize attendance entry for a worker on a given date
@@ -1383,7 +1604,7 @@
           loginPassInput.type = isPass ? 'text' : 'password';
         });
 
-        loginForm.addEventListener('submit', (e) => {
+        loginForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const operatorName = (document.getElementById('login-operator-name')?.value || '').trim();
           const enteredId = loginIdInput.value.trim();
@@ -1391,34 +1612,25 @@
 
           if (enteredId === ADMIN_ID && enteredPass === ADMIN_PASS) {
             loginError.classList.add('hidden');
-            // Reload latest saved records from storage so no previous user's data is ever overwritten or removed
-            loadState();
 
             const activeDisplayUser = operatorName ? `${operatorName} (${enteredId})` : enteredId;
             state.isAuthenticated = true;
             state.currentUser = activeDisplayUser;
-            localStorage.setItem(STORAGE_KEYS.AUTH, 'true');
-            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, activeDisplayUser);
-            recordAuditLog('લોગિન', `યુઝર "${activeDisplayUser}" એ લોગિન કર્યું. બધા જૂના સેવ રેકોર્ડ્સ સુરક્ષિત છે.`);
+            await recordAuditLog('લોગિન', `યુઝર "${activeDisplayUser}" એ લાઇવ મલ્ટી-યુઝર એપમાં લોગિન કર્યું.`);
             loginForm.reset();
             updateAuthUI();
-            showToast(`સ્વાગત છે ${activeDisplayUser}! બધા જૂના રેકોર્ડ્સ સુરક્ષિત છે.`);
+            showToast(`સ્વાગત છે ${activeDisplayUser}! બધા ફોનમાં લાઇવ ડેટા સિંક ચાલુ છે.`);
           } else {
             loginErrorText.textContent = 'ખોટું ID અથવા પાસવર્ડ. કૃપા કરીને ID: admin અને પાસવર્ડ: admin@123 લખો.';
             loginError.classList.remove('hidden');
           }
         });
 
-        logoutBtn.addEventListener('click', () => {
-          // Ensure all current records are flushed safely before logout without removing anything
-          saveWorkers();
-          saveAttendance();
-          saveNotes();
-          recordAuditLog('લોગઆઉટ', `યુઝર "${state.currentUser}" એ લોગઆઉટ કર્યું (બધા રેકોર્ડ્સ સેવ રાખેલ છે).`);
+        logoutBtn.addEventListener('click', async () => {
+          await recordAuditLog('લોગઆઉટ', `યુઝર "${state.currentUser}" એ લોગઆઉટ કર્યું (ક્લાઉડમાં બધા રેકોર્ડ્સ સુરક્ષિત છે).`);
           state.isAuthenticated = false;
-          localStorage.removeItem(STORAGE_KEYS.AUTH);
           updateAuthUI();
-          showToast('સુરક્ષિત રીતે લોગઆઉટ થઈ ગયું છે. બધા રેકોર્ડ્સ સેવ છે.', 'info');
+          showToast('સુરક્ષિત રીતે લોગઆઉટ થઈ ગયું છે.', 'info');
         });
       }
 
@@ -2352,24 +2564,7 @@
           }
         });
 
-        dateInput.addEventListener('change', (e) => {
-          if (e.target.value) {
-            state.selectedDate = e.target.value;
-            renderAttendancePage();
-          }
-        });
-
-        todayBtn.addEventListener('click', () => {
-          state.selectedDate = getTodayISO();
-          renderAttendancePage();
-          showToast('આજની તારીખ પસંદ થઈ ગઈ છે', 'info');
-        });
-
-        cancelEditWorkerBtn.addEventListener('click', () => {
-          resetWorkerForm();
-        });
-
-        addWorkerForm.addEventListener('submit', (e) => {
+        addWorkerForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const editId = document.getElementById('worker-edit-id').value;
           const name = document.getElementById('worker-name').value.trim();
@@ -2384,22 +2579,24 @@
           }
 
           if (editId) {
-            const idx = state.workers.findIndex((w) => w.id === editId);
-            if (idx !== -1) {
-              state.workers[idx] = {
-                ...state.workers[idx],
-                name,
-                role,
-                dailyRate,
-                otRate,
-                phone,
-                savedBy: state.currentUser || ADMIN_ID,
-              };
-              saveWorkers(`કારીગર "${name}" ની વિગત અને પગાર (₹${dailyRate}/દિવસ, OT ₹${otRate}/કલાક) સુધાર્યા.`);
-              showToast(`${name} ની વિગત અને પગાર અપડેટ થઈ ગયા છે!`);
-            }
+            const existing = state.workers.find((w) => w.id === editId) || {};
+            const updatedWorker = {
+              ...existing,
+              id: editId,
+              name,
+              role,
+              dailyRate,
+              otRate,
+              phone,
+              savedBy: state.currentUser || ADMIN_ID,
+            };
+            await saveSingleWorkerToCloud(
+              updatedWorker,
+              `કારીગર "${name}" ની વિગત અને પગાર (₹${dailyRate}/દિવસ, OT ₹${otRate}/કલાક) સુધાર્યા.`
+            );
+            showToast(`${name} ની વિગત અને પગાર અપડેટ થઈ ગયા છે!`);
           } else {
-            state.workers.push({
+            const newWorker = {
               id: 'w_' + Date.now(),
               name,
               role,
@@ -2407,8 +2604,12 @@
               otRate,
               phone,
               savedBy: state.currentUser || ADMIN_ID,
-            });
-            saveWorkers(`નવો કારીગર "${name}" (${role}, ₹${dailyRate}/દિવસ) ઉમેર્યો.`);
+              createdAtMs: Date.now(),
+            };
+            await saveSingleWorkerToCloud(
+              newWorker,
+              `નવો કારીગર "${name}" (${role}, ₹${dailyRate}/દિવસ) ઉમેર્યો.`
+            );
             showToast(`${name} કારીગર લિસ્ટમાં ઉમેરાઈ ગયા છે!`);
           }
 
@@ -2417,7 +2618,7 @@
         });
 
         // Event delegation for shift buttons, OT +/- buttons, Edit Worker, and Delete Worker
-        workerListContainer.addEventListener('click', (e) => {
+        workerListContainer.addEventListener('click', async (e) => {
           // 1. Shift Status Button (હાજર / અડધો દિવસ / ગેરહાજર)
           const statusBtn = e.target.closest('.att-status-btn');
           if (statusBtn) {
@@ -2435,8 +2636,11 @@
             };
             const workerObj = state.workers.find((w) => w.id === workerId);
             const statusGu = status === 'P' ? 'હાજર' : status === 'H' ? 'અડધો દિવસ' : 'ગેરહાજર';
-            saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} ની હાજરી "${statusGu}" સેવ કરી.`);
             renderAttendancePage();
+            await saveDateAttendanceToCloud(
+              state.selectedDate,
+              `${state.selectedDate}: ${workerObj ? workerObj.name : workerId} ની હાજરી "${statusGu}" સેવ કરી.`
+            );
             return;
           }
 
@@ -2461,8 +2665,11 @@
               savedBy: state.currentUser || ADMIN_ID,
             };
             const workerObj = state.workers.find((w) => w.id === workerId);
-            saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${nextHours} કલાક સેવ કર્યો.`);
             renderAttendancePage();
+            await saveDateAttendanceToCloud(
+              state.selectedDate,
+              `${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${nextHours} કલાક સેવ કર્યો.`
+            );
             return;
           }
 
@@ -2502,9 +2709,8 @@
             showConfirmModal(
               'કારીગર દૂર કરો?',
               `શું તમે ખરેખર "${worker.name}" ને સેન્ચ્યુરી પ્રોડક્ટ લિસ્ટમાંથી દૂર કરવા માંગો છો?`,
-              () => {
-                state.workers = state.workers.filter((w) => w.id !== workerId);
-                saveWorkers(`કારીગર "${worker.name}" ને લિસ્ટમાંથી ડિલીટ કર્યા.`);
+              async () => {
+                await deleteWorkerFromCloud(workerId, `કારીગર "${worker.name}" ને લિસ્ટમાંથી ડિલીટ કર્યા.`);
                 if (document.getElementById('worker-edit-id').value === workerId) {
                   resetWorkerForm();
                 }
@@ -2516,7 +2722,7 @@
         });
 
         // Direct typing in Overtime Hours input
-        workerListContainer.addEventListener('change', (e) => {
+        workerListContainer.addEventListener('change', async (e) => {
           const otInput = e.target.closest('.ot-input');
           if (!otInput) return;
 
@@ -2535,11 +2741,14 @@
             savedBy: state.currentUser || ADMIN_ID,
           };
           const workerObj = state.workers.find((w) => w.id === workerId);
-          saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${val} કલાક સેવ કર્યો.`);
           renderAttendancePage();
+          await saveDateAttendanceToCloud(
+            state.selectedDate,
+            `${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${val} કલાક સેવ કર્યો.`
+          );
         });
 
-        markAllPresentBtn.addEventListener('click', () => {
+        markAllPresentBtn.addEventListener('click', async () => {
           if (state.workers.length === 0) {
             showToast('હાજરી ભરવા માટે કોઈ કારીગર નથી.', 'error');
             return;
@@ -2555,8 +2764,11 @@
               savedBy: state.currentUser || ADMIN_ID,
             };
           });
-          saveAttendance(`${state.selectedDate}: બધા ${state.workers.length} કારીગરોને હાજર (8-5) સેવ કર્યા.`);
           renderAttendancePage();
+          await saveDateAttendanceToCloud(
+            state.selectedDate,
+            `${state.selectedDate}: બધા ${state.workers.length} કારીગરોને હાજર (8-5) સેવ કર્યા.`
+          );
           showToast('બધા કારીગરોને હાજર (8 થી 5) કરી દેવામાં આવ્યા છે!');
         });
 
@@ -2724,7 +2936,7 @@
         const categoryFilters = document.getElementById('note-category-filters');
         const notesGrid = document.getElementById('notes-grid');
 
-        noteForm.addEventListener('submit', (e) => {
+        noteForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const editId = document.getElementById('note-edit-id').value;
           const title = document.getElementById('note-title').value.trim();
@@ -2739,29 +2951,29 @@
           const timestamp = getGujaratiTimestamp();
 
           if (editId) {
-            const idx = state.notes.findIndex((n) => n.id === editId);
-            if (idx !== -1) {
-              state.notes[idx] = {
-                ...state.notes[idx],
-                title,
-                category,
-                content,
-                updatedAt: timestamp,
-                savedBy: state.currentUser || ADMIN_ID,
-              };
-              saveNotes(`નોંધ "${title}" સુધારીને સેવ કરી.`);
-              showToast('નોંધ સુધારાઈ ગઈ છે!');
-            }
+            const existing = state.notes.find((n) => n.id === editId) || {};
+            const updatedNote = {
+              ...existing,
+              id: editId,
+              title,
+              category,
+              content,
+              updatedAt: timestamp,
+              savedBy: state.currentUser || ADMIN_ID,
+            };
+            await saveSingleNoteToCloud(updatedNote, `નોંધ "${title}" સુધારીને સેવ કરી.`);
+            showToast('નોંધ સુધારાઈ ગઈ છે!');
           } else {
-            state.notes.unshift({
+            const newNote = {
               id: 'n_' + Date.now(),
               title,
               category,
               content,
               updatedAt: timestamp,
               savedBy: state.currentUser || ADMIN_ID,
-            });
-            saveNotes(`નવી નોંધ "${title}" (${category}) સેવ કરી.`);
+              createdAtMs: Date.now(),
+            };
+            await saveSingleNoteToCloud(newNote, `નવી નોંધ "${title}" (${category}) સેવ કરી.`);
             showToast('નવી નોંધ સાચવી લેવામાં આવી છે!');
           }
 
@@ -2814,9 +3026,8 @@
             showConfirmModal(
               'નોંધ દૂર કરો?',
               `શું તમે ખરેખર "${note.title}" નોંધ કાયમ માટે દૂર કરવા માંગો છો?`,
-              () => {
-                state.notes = state.notes.filter((n) => n.id !== noteId);
-                saveNotes(`નોંધ "${note.title}" ડિલીટ કરી.`);
+              async () => {
+                await deleteNoteFromCloud(noteId, `નોંધ "${note.title}" ડિલીટ કરી.`);
                 if (document.getElementById('note-edit-id').value === noteId) {
                   resetNoteForm();
                 }
@@ -2980,6 +3191,26 @@
         const importInput = document.getElementById('import-backup-input');
         const clearLogsBtn = document.getElementById('clear-logs-btn');
         const clearAllBtn = document.getElementById('clear-all-records-btn');
+        const copyAppLinkBtn = document.getElementById('copy-app-link-btn');
+
+        if (copyAppLinkBtn) {
+          copyAppLinkBtn.addEventListener('click', () => {
+            const temp = document.createElement('textarea');
+            temp.value = window.location.href;
+            temp.style.position = 'fixed';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+              document.execCommand('copy');
+              showToast('એપ લિંક કોપી થઈ ગઈ! હવે બધા મેનેજર/સ્ટાફને WhatsApp માં મોકલો.');
+            } catch (err) {
+              showToast('લિંક કોપી થઈ શકી નથી.', 'error');
+            } finally {
+              document.body.removeChild(temp);
+            }
+          });
+        }
 
         // Master Worker Edit / Delete
         tbody.addEventListener('click', (e) => {
@@ -3015,13 +3246,15 @@
             showConfirmModal(
               'કારીગર કાયમ માટે ડિલીટ કરો?',
               `શું તમે ખરેખર "${worker.name}" અને તેની બધી માહિતી ડિલીટ કરવા માંગો છો?`,
-              () => {
-                state.workers = state.workers.filter((w) => w.id !== workerId);
-                Object.keys(state.attendance).forEach((dKey) => {
-                  if (state.attendance[dKey]) delete state.attendance[dKey][workerId];
-                });
-                saveAttendance();
-                saveWorkers(`કારીગર "${worker.name}" અને તેના હાજરી રેકોર્ડ્સ ડિલીટ કર્યા.`);
+              async () => {
+                const affectedDates = Object.keys(state.attendance).filter(
+                  (dKey) => state.attendance[dKey] && state.attendance[dKey][workerId]
+                );
+                for (const dKey of affectedDates) {
+                  delete state.attendance[dKey][workerId];
+                  await saveDateAttendanceToCloud(dKey);
+                }
+                await deleteWorkerFromCloud(workerId, `કારીગર "${worker.name}" અને તેના હાજરી રેકોર્ડ્સ ડિલીટ કર્યા.`);
                 renderRecordsPage();
                 showToast(`${worker.name} ની બધી માહિતી ડિલીટ થઈ ગઈ છે.`, 'info');
               }
@@ -3045,9 +3278,8 @@
             showConfirmModal(
               'તારીખનો હાજરી રેકોર્ડ ડિલીટ કરો?',
               `શું તમે ખરેખર ${dateISO} ની બધી હાજરી માહિતી ડિલીટ કરવા માંગો છો?`,
-              () => {
-                delete state.attendance[dateISO];
-                saveAttendance(`તારીખ ${dateISO} નો હાજરી રેકોર્ડ ડિલીટ કર્યો.`);
+              async () => {
+                await deleteDateAttendanceFromCloud(dateISO, `તારીખ ${dateISO} નો હાજરી રેકોર્ડ ડિલીટ કર્યો.`);
                 renderRecordsPage();
                 showToast(`${dateISO} નો રેકોર્ડ ડિલીટ થઈ ગયો છે.`, 'info');
               }
@@ -3056,7 +3288,7 @@
         });
 
         // Export Full JSON Backup
-        exportBtn.addEventListener('click', () => {
+        exportBtn.addEventListener('click', async () => {
           const backupPayload = {
             app: 'Century Product - Karkhano Management',
             exportedAt: new Date().toISOString(),
@@ -3073,31 +3305,40 @@
           a.download = `Century_Karkhano_Backup_${getTodayISO()}.json`;
           a.click();
           URL.revokeObjectURL(url);
-          recordAuditLog('બેકઅપ', `પૂરો ડેટા બેકઅપ (${a.download}) ડાઉનલોડ કર્યો.`);
+          await recordAuditLog('બેકઅપ', `પૂરો ડેટા બેકઅપ (${a.download}) ડાઉનલોડ કર્યો.`);
           renderRecordsPage();
           showToast('પૂરો બેકઅપ ડાઉનલોડ થઈ ગયો છે!');
         });
 
-        // Import JSON Backup
+        // Import JSON Backup into Shared Cloud
         importInput.addEventListener('change', (e) => {
           const file = e.target.files && e.target.files[0];
           if (!file) return;
 
           const reader = new FileReader();
-          reader.onload = (ev) => {
+          reader.onload = async (ev) => {
             try {
               const parsed = JSON.parse(ev.target.result);
-              if (Array.isArray(parsed.workers)) state.workers = parsed.workers;
-              if (parsed.attendance && typeof parsed.attendance === 'object') state.attendance = parsed.attendance;
-              if (Array.isArray(parsed.notes)) state.notes = parsed.notes;
-              if (Array.isArray(parsed.logs)) state.logs = parsed.logs;
+              if (Array.isArray(parsed.workers)) {
+                for (const w of parsed.workers) {
+                  await saveSingleWorkerToCloud(w);
+                }
+              }
+              if (parsed.attendance && typeof parsed.attendance === 'object') {
+                for (const [dKey, recMap] of Object.entries(parsed.attendance)) {
+                  state.attendance[dKey] = recMap;
+                  await saveDateAttendanceToCloud(dKey);
+                }
+              }
+              if (Array.isArray(parsed.notes)) {
+                for (const n of parsed.notes) {
+                  await saveSingleNoteToCloud(n);
+                }
+              }
 
-              saveWorkers();
-              saveAttendance();
-              saveNotes();
-              recordAuditLog('બેકઅપ રિસ્ટોર', `ફાઇલ "${file.name}" માંથી બધા રેકોર્ડ્સ રિસ્ટોર કર્યા.`);
+              await recordAuditLog('બેકઅપ રિસ્ટોર', `ફાઇલ "${file.name}" માંથી બધા રેકોર્ડ્સ ક્લાઉડમાં રિસ્ટોર કર્યા.`);
               renderRecordsPage();
-              showToast('બેકઅપ ફાઇલમાંથી બધો ડેટા સેવ થઈ ગયો છે!');
+              showToast('બેકઅપ ફાઇલમાંથી બધો ડેટા બધા ફોન માટે સેવ થઈ ગયો છે!');
             } catch (err) {
               showToast('ખોટી બેકઅપ ફાઇલ છે. કૃપા કરીને સાચી JSON ફાઇલ પસંદ કરો.', 'error');
             } finally {
@@ -3112,9 +3353,15 @@
           showConfirmModal(
             'લોગિન હિસ્ટ્રી સાફ કરો?',
             'શું તમે લોગિન અને ફેરફાર હિસ્ટ્રી લિસ્ટ સાફ કરવા માંગો છો? (કારીગરો અને હાજરી સેવ રહેશે)',
-            () => {
+            async () => {
+              const oldLogs = [...state.logs];
               state.logs = [];
-              recordAuditLog('લોગ સાફ', `યુઝર "${state.currentUser}" એ જૂની હિસ્ટ્રી સાફ કરી.`);
+              if (cloudReady && cloudUser) {
+                for (const l of oldLogs) {
+                  await deleteDoc(getSharedDoc('karkhano_logs', l.id)).catch(() => {});
+                }
+              }
+              await recordAuditLog('લોગ સાફ', `યુઝર "${state.currentUser}" એ જૂની હિસ્ટ્રી સાફ કરી.`);
               renderRecordsPage();
               showToast('હિસ્ટ્રી સાફ થઈ ગઈ છે.', 'info');
             }
@@ -3125,15 +3372,17 @@
         clearAllBtn.addEventListener('click', () => {
           showConfirmModal(
             'બધા કારીગરો, હાજરી અને નોંધ ડિલીટ કરો?',
-            'ચેતવણી: આનાથી બધા કારીગરો, બધી હાજરી અને બધી નોંધ કાયમ માટે ડિલીટ થઈ જશે!',
-            () => {
-              state.workers = [];
-              state.attendance = {};
-              state.notes = [];
-              saveWorkers();
-              saveAttendance();
-              saveNotes();
-              recordAuditLog('બધો ડેટા ડિલીટ', `એડમિન "${state.currentUser}" એ બધા કારીગરો, હાજરી અને નોંધ ડિલીટ કર્યા.`);
+            'ચેતવણી: આનાથી બધા ફોનમાંથી બધા કારીગરો, બધી હાજરી અને બધી નોંધ કાયમ માટે ડિલીટ થઈ જશે!',
+            async () => {
+              const workerIds = state.workers.map((w) => w.id);
+              const dateKeys = Object.keys(state.attendance);
+              const noteIds = state.notes.map((n) => n.id);
+
+              for (const wId of workerIds) await deleteWorkerFromCloud(wId);
+              for (const dKey of dateKeys) await deleteDateAttendanceFromCloud(dKey);
+              for (const nId of noteIds) await deleteNoteFromCloud(nId);
+
+              await recordAuditLog('બધો ડેટા ડિલીટ', `એડમિન "${state.currentUser}" એ બધા કારીગરો, હાજરી અને નોંધ ડિલીટ કર્યા.`);
               renderRecordsPage();
               showToast('બધા રેકોર્ડ્સ ડિલીટ થઈ ગયા છે.', 'info');
             }
@@ -3142,10 +3391,9 @@
       }
 
       // -------------------------------------------------------------------
-      // 10. INITIALIZE APPLICATION ON DOM READY
+      // 10. INITIALIZE APPLICATION & REAL-TIME CLOUD SYNC ON DOM READY
       // -------------------------------------------------------------------
-      window.addEventListener('DOMContentLoaded', () => {
-        loadState();
+      window.addEventListener('DOMContentLoaded', async () => {
         setupLoginEvents();
         setupNavigationEvents();
         setupAttendanceEvents();
@@ -3153,6 +3401,7 @@
         setupNotesEvents();
         setupRecordsEvents();
         updateAuthUI();
+        await initCloudSync();
       });
     })();
   </script>
