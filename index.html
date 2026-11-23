@@ -304,219 +304,145 @@
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
 
       <!-- ================================================================= -->
-      <!-- PAGE A: ADMIN OVERVIEW DASHBOARD (ડેશબોર્ડ)                      -->
+      <!-- PAGE A: ADMIN DASHBOARD (ડેશબોર્ડ)                               -->
       <!-- ================================================================= -->
       <section id="page-dashboard" class="space-y-6">
-        <!-- Welcome Banner -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-bold">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> એડમિન પેનલ ચાલુ છે
+            <span class="inline-block px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-extrabold mb-1.5">
+              સેન્ચ્યુરી કારખાનું &bull; લાઇવ ડેશબોર્ડ
             </span>
-            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">નમસ્તે, કારખાના એડમિન</h2>
-            <p id="dashboard-today-label" class="text-sm text-slate-500 mt-0.5">આજનો કામકાજ અહેવાલ</p>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">આજનો કારખાનાનો સારાંશ</h2>
+            <p id="dashboard-today-label" class="text-xs sm:text-sm text-slate-500 mt-0.5">આજની તારીખ અને શિફ્ટ (8:00 થી 5:00)</p>
           </div>
-          <div class="flex flex-wrap gap-2.5">
-            <button
-              type="button"
-              data-jump="attendance"
-              class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-xs transition cursor-pointer flex items-center gap-2"
-            >
-              <span>આજની હાજરી ભરો</span>
-              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-              </svg>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" data-jump="attendance" class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs cursor-pointer">
+              + આજની હાજરી ભરો
             </button>
-            <button
-              type="button"
-              data-jump="monthly"
-              class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-xs transition cursor-pointer"
-            >
-              માસિક PDF રિપોર્ટ
-            </button>
-            <button
-              type="button"
-              data-jump="records"
-              class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs transition cursor-pointer"
-            >
-              સેવ રેકોર્ડ્સ &amp; લોગિન હિસ્ટ્રી
+            <button type="button" data-jump="notes" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold shadow-xs cursor-pointer">
+              📝 નવી નોંધ લખો
             </button>
           </div>
         </div>
 
-        <!-- KPI Summary Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Total Workers -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-slate-800">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500">કુલ કારીગરો</span>
-              <span class="p-2 rounded-lg bg-slate-100 text-slate-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-                </svg>
-              </span>
-            </div>
-            <p id="stat-total-workers" class="text-3xl font-extrabold text-slate-900 mt-3">0</p>
-            <p class="text-xs text-slate-500 mt-1">કારખાનાના નોંધાયેલા સ્ટાફ</p>
+        <!-- Summary KPI Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <span class="text-xs font-bold text-slate-500">કુલ કારીગરો</span>
+            <p id="stat-total-workers" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-1">0</p>
+            <span class="text-[11px] text-slate-500 mt-1 block">નોંધાયેલ સ્ટાફ</span>
           </div>
-
-          <!-- Present / Half / Absent Today -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-emerald-600">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500">આજની હાજરી</span>
-              <span class="p-2 rounded-lg bg-emerald-50 text-emerald-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </span>
-            </div>
-            <p id="stat-present-today" class="text-3xl font-extrabold text-emerald-700 mt-3">0</p>
-            <p id="stat-attendance-breakdown" class="text-xs text-slate-600 font-medium mt-1">0 હાજર &bull; 0 અડધો &bull; 0 ગેરહાજર</p>
+          <div class="bg-white border border-emerald-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <span class="text-xs font-bold text-emerald-700">આજે હાજર (8-5)</span>
+            <p id="stat-present-today" class="text-2xl sm:text-3xl font-extrabold text-emerald-700 mt-1">0</p>
+            <span id="stat-attendance-breakdown" class="text-[11px] text-slate-500 mt-1 block">0 હાજર • 0 અડધો • 0 ગેરહાજર</span>
           </div>
-
-          <!-- Total Overtime Hours Today -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-amber-500">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500">આજના ઓવરટાઇમ કલાક</span>
-              <span class="p-2 rounded-lg bg-amber-50 text-amber-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </span>
-            </div>
-            <p id="stat-ot-hours" class="text-3xl font-extrabold text-amber-600 mt-3">0 કલાક</p>
-            <p class="text-xs text-slate-500 mt-1">સાંજે 5:00 પછીનું વધારાનું કામ</p>
+          <div class="bg-white border border-amber-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+            <span class="text-xs font-bold text-amber-800">આજનો ઓવરટાઇમ</span>
+            <p id="stat-ot-hours" class="text-2xl sm:text-3xl font-extrabold text-amber-700 mt-1">0 કલાક</p>
+            <span class="text-[11px] text-slate-500 mt-1 block">સાંજે 5:00 પછીનું કામ</span>
           </div>
-
-          <!-- Total Daily Wage Payable Today -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-blue-600">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500">આજનો કુલ પગાર ₹</span>
-              <span class="p-2 rounded-lg bg-blue-50 text-blue-700 font-extrabold text-sm">
-                ₹
-              </span>
-            </div>
-            <p id="stat-total-wage" class="text-3xl font-extrabold text-blue-700 mt-3">₹0</p>
-            <p class="text-xs text-slate-500 mt-1">શિફ્ટ + ઓવરટાઇમ મળીને</p>
+          <div class="bg-blue-600 text-white rounded-2xl p-4 sm:p-5 shadow-xs">
+            <span class="text-xs font-bold text-blue-100">આજનો કુલ પગાર</span>
+            <p id="stat-total-wage" class="text-2xl sm:text-3xl font-extrabold mt-1">₹0</p>
+            <span class="text-[11px] text-blue-100 mt-1 block">શિફ્ટ + ઓવરટાઇમ હિસાબ</span>
           </div>
         </div>
 
-        <!-- Two-Column Quick Overview Panels -->
+        <!-- Two Column Quick Preview -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Today's Attendance & Wage Snapshot -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-extrabold text-slate-900">આજની કારીગર હાજરી અને પગાર</h3>
-              <button type="button" data-jump="attendance" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
-                પૂરું રજિસ્ટર જુઓ &rarr;
-              </button>
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+            <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
+              <h3 class="text-base font-extrabold text-slate-900">આજની કારીગર હાજરી</h3>
+              <button type="button" data-jump="attendance" class="text-xs font-extrabold text-amber-700 hover:underline cursor-pointer">બધા જુઓ &rarr;</button>
             </div>
-            <div id="dashboard-worker-preview" class="divide-y divide-slate-100">
-              <!-- Populated by JS -->
-            </div>
+            <div id="dashboard-worker-preview" class="divide-y divide-slate-100"></div>
           </div>
 
-          <!-- Recent Karkhano Notes -->
-          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-            <div class="flex items-center justify-between mb-4">
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+            <div class="flex items-center justify-between mb-3 pb-2.5 border-b border-slate-100">
               <h3 class="text-base font-extrabold text-slate-900">તાજેતરની કારખાનાની નોંધ</h3>
-              <button type="button" data-jump="notes" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
-                બધી નોંધ જુઓ &rarr;
-              </button>
+              <button type="button" data-jump="notes" class="text-xs font-extrabold text-amber-700 hover:underline cursor-pointer">બધી નોંધ &rarr;</button>
             </div>
-            <div id="dashboard-notes-preview" class="space-y-3">
-              <!-- Populated by JS -->
-            </div>
+            <div id="dashboard-notes-preview" class="space-y-2.5"></div>
           </div>
         </div>
       </section>
 
       <!-- ================================================================= -->
-      <!-- PAGE B: WORKER ATTENDANCE, 8-5 SHIFT & OVERTIME PAGE              -->
+      <!-- PAGE B: WORKER ATTENDANCE & WAGE PAGE (કારીગર હાજરી અને પગાર)    -->
       <!-- ================================================================= -->
       <section id="page-attendance" class="hidden space-y-6">
-        <!-- Date & Quick Shift Actions Bar -->
+        <!-- Date Selector & Quick Actions -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-extrabold mb-2">
-                નિયમિત શિફ્ટ સમય: સવારે 8:00 થી સાંજે 5:00
+              <span class="inline-block px-2.5 py-1 rounded-md bg-blue-100 text-blue-900 text-xs font-extrabold mb-1.5">
+                શિફ્ટ સમય: સવારે 8:00 થી સાંજે 5:00
               </span>
-              <h2 class="text-xl font-extrabold text-slate-900">કારીગર હાજરી, ઓવરટાઇમ અને પગાર રજિસ્ટર</h2>
-              <p class="text-sm text-slate-500 mt-0.5">
-                તારીખ: <span id="selected-date-display" class="font-bold text-slate-800">આજ</span>
-              </p>
+              <h2 class="text-xl font-extrabold text-slate-900">કારીગર હાજરી અને ઓવરટાઇમ રજિસ્ટર</h2>
+              <p id="selected-date-display" class="text-sm font-bold text-amber-700 mt-0.5">આજની તારીખ</p>
             </div>
 
-            <div class="flex flex-wrap items-center gap-2.5">
-              <!-- Date Picker -->
-              <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-2">
-                <label for="attendance-date" class="text-xs font-bold text-slate-600 mr-2">તારીખ:</label>
-                <input
-                  type="date"
-                  id="attendance-date"
-                  class="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
-                />
-              </div>
-
+            <div class="flex flex-wrap items-center gap-2">
+              <input
+                type="date"
+                id="attendance-date"
+                class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-sm font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+              />
               <button
                 type="button"
                 id="today-date-btn"
-                class="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition cursor-pointer"
+                class="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-extrabold cursor-pointer"
               >
-                આજ
+                આજની તારીખ
               </button>
-
               <button
                 type="button"
                 id="mark-all-present-btn"
-                class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+                class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-xs cursor-pointer"
               >
-                બધા હાજર (8-5)
+                ✓ બધાને હાજર કરો
               </button>
-
               <button
                 type="button"
                 id="copy-report-btn"
-                class="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+                class="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-extrabold shadow-xs cursor-pointer"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
-                </svg>
-                <span>WhatsApp રિપોર્ટ કોપી કરો</span>
+                📋 WhatsApp રિપોર્ટ
               </button>
             </div>
           </div>
 
-          <!-- Daily Attendance & Wage Tally Bar -->
-          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5 pt-5 border-t border-slate-200">
-            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold text-emerald-700 block">હાજર (8-5)</span>
-              <span id="att-count-present" class="text-2xl font-extrabold text-emerald-800">0</span>
+          <!-- Daily Totals Strip -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 mt-5 pt-4 border-t border-slate-200 text-center">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-2.5">
+              <span class="block text-[11px] font-bold text-emerald-800">હાજર (8-5)</span>
+              <span id="att-count-present" class="text-lg font-extrabold text-emerald-700">0</span>
             </div>
-            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold text-amber-700 block">અડધો દિવસ</span>
-              <span id="att-count-half" class="text-2xl font-extrabold text-amber-800">0</span>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5">
+              <span class="block text-[11px] font-bold text-amber-800">અડધો દિવસ</span>
+              <span id="att-count-half" class="text-lg font-extrabold text-amber-700">0</span>
             </div>
-            <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold text-red-700 block">ગેરહાજર</span>
-              <span id="att-count-absent" class="text-2xl font-extrabold text-red-800">0</span>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-2.5">
+              <span class="block text-[11px] font-bold text-red-800">ગેરહાજર</span>
+              <span id="att-count-absent" class="text-lg font-extrabold text-red-700">0</span>
             </div>
-            <div class="bg-slate-100 border border-slate-300 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold text-slate-700 block">કુલ ઓવરટાઇમ</span>
-              <span id="att-total-ot" class="text-2xl font-extrabold text-slate-900">0 કલાક</span>
+            <div class="bg-slate-100 border border-slate-300 rounded-xl p-2.5">
+              <span class="block text-[11px] font-bold text-slate-700">કુલ ઓવરટાઇમ</span>
+              <span id="att-total-ot" class="text-lg font-extrabold text-slate-900">0 કલાક</span>
             </div>
-            <div class="col-span-2 sm:col-span-1 bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold text-blue-700 block">કુલ આજનો પગાર</span>
-              <span id="att-total-payable" class="text-2xl font-extrabold text-blue-800">₹0</span>
+            <div class="col-span-2 sm:col-span-1 bg-blue-600 text-white rounded-xl p-2.5">
+              <span class="block text-[11px] font-bold text-blue-100">આજનો કુલ પગાર</span>
+              <span id="att-total-payable" class="text-lg font-extrabold">₹0</span>
             </div>
           </div>
         </div>
 
         <!-- Add / Edit Worker Form (Different Rupees per Worker) -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex items-center justify-between gap-3 mb-3">
-            <h3 id="worker-form-heading" class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+          <div class="flex items-center justify-between mb-4">
+            <h3 id="worker-form-heading" class="text-base font-extrabold text-slate-900 flex items-center gap-2">
               <span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-black">+</span>
               <span>નવો કારીગર ઉમેરો (અલગ પગાર અને ઓવરટાઇમ દર સાથે)</span>
             </h3>
@@ -525,15 +451,14 @@
               id="cancel-edit-worker-btn"
               class="hidden px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
             >
-              ફેરફાર રદ કરો
+              રદ કરો
             </button>
           </div>
 
-          <form id="add-worker-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+          <form id="add-worker-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
             <input type="hidden" id="worker-edit-id" value="" />
-
             <div class="lg:col-span-3">
-              <label for="worker-name" class="block text-xs font-bold text-slate-600 mb-1">કારીગરનું પૂરું નામ *</label>
+              <label for="worker-name" class="block text-xs font-bold text-slate-700 mb-1">કારીગરનું નામ *</label>
               <input
                 type="text"
                 id="worker-name"
@@ -542,131 +467,103 @@
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
               />
             </div>
-
             <div class="lg:col-span-2">
-              <label for="worker-role" class="block text-xs font-bold text-slate-600 mb-1">કામ / વિભાગ</label>
+              <label for="worker-role" class="block text-xs font-bold text-slate-700 mb-1">કામ / વિભાગ</label>
               <select
                 id="worker-role"
-                class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-semibold text-slate-800"
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold"
               >
-                <option value="મશીન ઓપરેટર">મશીન ઓપરેટર</option>
                 <option value="કારીગર">કારીગર</option>
-                <option value="પેકિંગ સ્ટાફ">પેકિંગ સ્ટાફ</option>
+                <option value="મશીન ઓપરેટર">મશીન ઓપરેટર</option>
                 <option value="હેલ્પર">હેલ્પર</option>
+                <option value="પેકિંગ">પેકિંગ</option>
                 <option value="સુપરવાઇઝર">સુપરવાઇઝર</option>
               </select>
             </div>
-
             <div class="lg:col-span-2">
-              <label for="worker-daily-rate" class="block text-xs font-bold text-slate-600 mb-1">રોજનો પગાર (8-5) ₹ *</label>
+              <label for="worker-daily-rate" class="block text-xs font-bold text-slate-700 mb-1">રોજનો પગાર (8-5) ₹ *</label>
               <input
                 type="number"
                 id="worker-daily-rate"
                 min="0"
-                step="1"
+                step="10"
                 placeholder="દા.ત. 700"
                 required
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-900"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold"
               />
             </div>
-
             <div class="lg:col-span-2">
-              <label for="worker-ot-rate" class="block text-xs font-bold text-slate-600 mb-1">ઓવરટાઇમ દર (1 કલાક ₹) *</label>
+              <label for="worker-ot-rate" class="block text-xs font-bold text-slate-700 mb-1">ઓવરટાઇમ (કલાક ₹) *</label>
               <input
                 type="number"
                 id="worker-ot-rate"
                 min="0"
-                step="1"
+                step="5"
                 placeholder="દા.ત. 90"
                 required
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-900"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold"
               />
             </div>
-
-            <div class="lg:col-span-3 flex flex-col justify-end">
-              <label for="worker-phone" class="block text-xs font-bold text-slate-600 mb-1">મોબાઇલ નંબર (વૈકલ્પિક)</label>
-              <div class="flex gap-2">
+            <div class="lg:col-span-3 flex gap-2">
+              <div class="flex-1">
+                <label for="worker-phone" class="block text-xs font-bold text-slate-700 mb-1">મોબાઇલ (વૈકલ્પિક)</label>
                 <input
                   type="text"
                   id="worker-phone"
                   placeholder="98250 XXXXX"
                   class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
                 />
-                <button
-                  type="submit"
-                  id="worker-submit-btn"
-                  class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xs transition shrink-0 cursor-pointer"
-                >
-                  + ઉમેરો
-                </button>
               </div>
+              <button
+                type="submit"
+                id="worker-submit-btn"
+                class="self-end px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs whitespace-nowrap cursor-pointer"
+              >
+                + નવો કારીગર ઉમેરો
+              </button>
             </div>
           </form>
         </div>
 
-        <!-- Worker Attendance & Overtime Roster List -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
-            <h3 class="text-base font-extrabold text-slate-900">કારખાનાના કારીગરોની યાદી</h3>
-            <p class="text-xs text-slate-500">
-              <span class="font-bold text-emerald-700">હાજર (8-5)</span> = પૂરો પગાર &bull;
-              <span class="font-bold text-amber-700">અડધો દિવસ</span> = 50% પગાર &bull;
-              <span class="font-bold text-slate-700">ઓવરટાઇમ</span> = સાંજે 5 પછીના કલાક &times; કલાકનો દર
-            </p>
-          </div>
-
-          <div id="worker-list-container" class="space-y-3">
-            <!-- Populated dynamically via JS -->
-          </div>
-        </div>
+        <!-- Daily Worker Roster -->
+        <div id="worker-list-container" class="space-y-3"></div>
       </section>
 
       <!-- ================================================================= -->
-      <!-- PAGE C: MONTHLY SUMMARY & INDIVIDUAL WORKER PDF REPORTS           -->
+      <!-- PAGE C: MONTHLY REPORT & INDIVIDUAL PDF DOWNLOADS                 -->
       <!-- ================================================================= -->
       <section id="page-monthly" class="hidden space-y-6">
-        <!-- Monthly Controls & Bulk Download Banner -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 text-blue-900 text-xs font-extrabold mb-2">
-                આખા મહિનાની હાજરી, ઓવરટાઇમ અને પગાર સ્લિપ (A4 PDF)
+              <span class="inline-block px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-extrabold mb-1.5">
+                1 મહિનાનો પૂરો હિસાબ &bull; દરેક કારીગરની અલગ PDF
               </span>
-              <h2 class="text-xl font-extrabold text-slate-900">માસિક પગાર હિસાબ અને દરેક કારીગરની અલગ PDF</h2>
-              <p class="text-sm text-slate-500 mt-0.5">
-                મહિનો પસંદ કરો અને દરેક કારીગરના 1 થી 30/31 તારીખ સુધીના કામની અલગ-અલગ PDF ડાઉનલોડ કરો.
-              </p>
+              <h2 class="text-xl font-extrabold text-slate-900">માસિક પગાર અને હાજરી PDF રિપોર્ટ</h2>
+              <p id="monthly-label-display" class="text-sm font-bold text-blue-700 mt-0.5">મહિનો</p>
+              <p id="monthly-days-count" class="text-xs text-slate-500">કુલ દિવસ</p>
             </div>
 
             <div class="flex flex-wrap items-center gap-2.5">
-              <!-- Month & Year Picker -->
-              <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-2">
-                <label for="monthly-month-input" class="text-xs font-bold text-slate-700 mr-2">મહિનો પસંદ કરો:</label>
-                <input
-                  type="month"
-                  id="monthly-month-input"
-                  class="bg-transparent text-sm font-extrabold text-slate-900 focus:outline-none cursor-pointer"
-                />
-              </div>
-
-              <!-- Download All Workers Individually (Separate PDF per Worker) -->
+              <input
+                type="month"
+                id="monthly-month-input"
+                class="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 text-sm font-bold text-slate-900 focus:outline-none focus:border-amber-500"
+              />
               <button
                 type="button"
                 id="download-all-pdfs-btn"
-                class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-2 cursor-pointer"
+                class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-extrabold shadow-xs cursor-pointer"
               >
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                </svg>
-                <span>બધા કારીગરોની અલગ-અલગ PDF ડાઉનલોડ કરો</span>
+                ⬇ બધા કારીગરોની અલગ-અલગ PDF ડાઉનલોડ કરો
               </button>
             </div>
           </div>
 
-          <!-- Bulk Progress Indicator Bar -->
-          <div id="bulk-pdf-progress" class="hidden mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950">
-            <div class="flex items-center justify-between text-xs font-extrabold mb-1.5">
-              <span id="bulk-pdf-status-text">PDF તૈયાર થઈ રહી છે...</span>
+          <!-- Bulk Download Progress Bar -->
+          <div id="bulk-pdf-progress" class="hidden mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300">
+            <div class="flex items-center justify-between text-xs font-extrabold text-amber-900 mb-1.5">
+              <span id="bulk-pdf-status-text">PDF બને છે...</span>
               <span id="bulk-pdf-counter">0 / 0</span>
             </div>
             <div class="w-full h-2.5 bg-amber-200 rounded-full overflow-hidden">
@@ -674,117 +571,119 @@
             </div>
           </div>
 
-          <!-- Monthly Grand Totals KPIs -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200">
+          <!-- Monthly Grand Summary Cards -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-5 pt-4 border-t border-slate-200">
             <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
-              <span class="text-xs font-bold text-slate-500">પસંદ કરેલ મહિનો</span>
-              <p id="monthly-label-display" class="text-lg font-extrabold text-slate-900 mt-1">-</p>
-              <span id="monthly-days-count" class="text-[11px] font-semibold text-slate-500">30 દિવસ</span>
-            </div>
-            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
-              <span class="text-xs font-bold text-emerald-700">કુલ કામના દિવસ / કલાક</span>
-              <p id="monthly-total-days" class="text-lg font-extrabold text-emerald-800 mt-1">0 દિવસ</p>
-              <span id="monthly-total-reg-hours" class="text-[11px] font-semibold text-emerald-700">0 નિયમિત કલાક</span>
+              <span class="text-xs font-bold text-slate-500">કુલ કામના દિવસ</span>
+              <p id="monthly-total-days" class="text-xl font-extrabold text-slate-900 mt-1">0 દિવસ</p>
+              <span id="monthly-total-reg-hours" class="text-xs text-slate-500">0 નિયમિત કલાક (8-5)</span>
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
-              <span class="text-xs font-bold text-amber-800">કુલ ઓવરટાઇમ (આખા મહિનાના)</span>
-              <p id="monthly-total-ot" class="text-lg font-extrabold text-amber-900 mt-1">0 કલાક</p>
-              <span id="monthly-total-ot-pay" class="text-[11px] font-semibold text-amber-800">OT પગાર: ₹0</span>
+              <span class="text-xs font-bold text-amber-800">કુલ માસિક ઓવરટાઇમ</span>
+              <p id="monthly-total-ot" class="text-xl font-extrabold text-amber-900 mt-1">0 કલાક</p>
+              <span id="monthly-total-ot-pay" class="text-xs text-amber-700 font-bold">OT પગાર: ₹0</span>
             </div>
-            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3.5">
-              <span class="text-xs font-bold text-blue-700">કુલ માસિક પગાર ચૂકવવાપાત્ર</span>
-              <p id="monthly-grand-total" class="text-xl font-extrabold text-blue-800 mt-1">₹0</p>
-              <span class="text-[11px] font-semibold text-blue-700">બધા કારીગરો મળીને</span>
+            <div class="bg-blue-600 text-white rounded-xl p-3.5">
+              <span class="text-xs font-bold text-blue-100">મહિનાનો કુલ ચૂકવવાપાત્ર પગાર</span>
+              <p id="monthly-grand-total" class="text-2xl font-extrabold mt-1">₹0</p>
+              <span class="text-xs text-blue-100">બધા કારીગરોનો સરવાળો</span>
             </div>
           </div>
         </div>
 
-        <!-- Monthly Summary Cards / Table for Each Worker -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
-            <h3 class="text-base font-extrabold text-slate-900">દરેક કારીગરનો માસિક હિસાબ અને વ્યક્તિગત PDF</h3>
-            <span class="text-xs font-bold text-slate-500">1 કારીગર = 1 અલગ PDF ફાઇલ</span>
-          </div>
-
-          <div id="monthly-workers-list" class="space-y-4">
-            <!-- Rendered dynamically via JS -->
-          </div>
-        </div>
+        <!-- Per-Worker Monthly Card List -->
+        <div id="monthly-workers-list" class="space-y-3"></div>
       </section>
 
       <!-- ================================================================= -->
-      <!-- PAGE D: KARKHANO NOTES PAGE (કારખાનાની નોંધ)                      -->
+      <!-- PAGE D: KARKHANO NOTES PAGE (કારખાનાની નોંધ — સરળ નોટપેડ)        -->
       <!-- ================================================================= -->
-      <section id="page-notes" class="hidden space-y-6">
-        <!-- Add / Edit Note Card -->
+      <section id="page-notes" class="hidden space-y-5">
+        <!-- Simple Quick Notepad Card -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center justify-between mb-3">
             <div>
-              <h2 id="note-form-heading" class="text-xl font-extrabold text-slate-900">કારખાનાની નવી નોંધ લખો</h2>
-              <p class="text-sm text-slate-500">રોજનું ઉત્પાદન, કાચો માલ/સ્ટોક, મશીન રિપેરિંગ અથવા જરૂરી સૂચનાઓ સાચવો.</p>
+              <h2 id="note-form-heading" class="text-xl font-extrabold text-slate-900">સરળ કારખાના નોટપેડ</h2>
+              <p class="text-xs sm:text-sm text-slate-500">સીધું લખો અને "નોંધ સેવ કરો" દબાવો (શીર્ષક લખવું ફરજિયાત નથી).</p>
             </div>
             <button
               type="button"
               id="cancel-edit-note-btn"
               class="hidden px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
             >
-              ફેરફાર રદ કરો
+              રદ કરો
             </button>
           </div>
 
-          <form id="note-form" class="space-y-4">
-            <input type="hidden" id="note-edit-id" value="" />
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div class="sm:col-span-2">
-                <label for="note-title" class="block text-xs font-bold text-slate-600 mb-1">નોંધનું શીર્ષક *</label>
-                <input
-                  type="text"
-                  id="note-title"
-                  placeholder="દા.ત. 500 કિલો લોખંડની શીટ મંગાવવી / લેથ મશીન સર્વિસ"
-                  required
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
-                />
-              </div>
-              <div>
-                <label for="note-category" class="block text-xs font-bold text-slate-600 mb-1">વિભાગ / કેટેગરી</label>
-                <select
-                  id="note-category"
-                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-800"
-                >
-                  <option value="ઉત્પાદન">ઉત્પાદન</option>
-                  <option value="માલ / સ્ટોક">માલ / સ્ટોક</option>
-                  <option value="મશીન રિપેરિંગ">મશીન રિપેરિંગ</option>
-                  <option value="સામાન્ય નોંધ">સામાન્ય નોંધ</option>
-                </select>
-              </div>
+          <!-- One-Tap Quick Topic Chips -->
+          <div class="mb-3">
+            <span class="block text-[11px] font-bold text-slate-500 mb-1.5">ઝડપી વિષય પસંદ કરો (એક ક્લિક):</span>
+            <div id="quick-note-chips" class="flex flex-wrap gap-2">
+              <button type="button" data-quick-cat="માલ / સ્ટોક" data-quick-prefix="માલ મંગાવવો: " class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-extrabold cursor-pointer">
+                📦 માલ મંગાવવો
+              </button>
+              <button type="button" data-quick-cat="ઉત્પાદન" data-quick-prefix="આજનું કામ: " class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-900 text-xs font-extrabold cursor-pointer">
+                🏭 આજનું કામ
+              </button>
+              <button type="button" data-quick-cat="મશીન રિપેરિંગ" data-quick-prefix="મશીન રિપેર: " class="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 border border-red-300 text-red-900 text-xs font-extrabold cursor-pointer">
+                🔧 મશીન રિપેર
+              </button>
+              <button type="button" data-quick-cat="સામાન્ય નોંધ" data-quick-prefix="હિસાબ / ઉપાડ: " class="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-300 text-blue-900 text-xs font-extrabold cursor-pointer">
+                💰 હિસાબ / ઉપાડ
+              </button>
             </div>
+          </div>
 
+          <form id="note-form" class="space-y-3">
+            <input type="hidden" id="note-edit-id" value="" />
+
+            <!-- Simple Big Writing Box -->
             <div>
-              <label for="note-content" class="block text-xs font-bold text-slate-600 mb-1">વિગતવાર નોંધ *</label>
               <textarea
                 id="note-content"
                 rows="3"
-                placeholder="માલનો જથ્થો, વેપારીનું નામ, કામની સૂચના વગેરે અહીં લખો..."
+                placeholder="અહીં સીધી નોંધ લખો... (દા.ત. 10 બોક્સ સ્ક્રૂ અને 200 કિલો લોખંડ મંગાવવાનું છે)"
                 required
-                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
+                class="w-full p-4 rounded-xl border-2 border-slate-300 bg-amber-50/30 focus:bg-white focus:border-amber-500 focus:outline-none text-base font-medium text-slate-900 leading-relaxed"
               ></textarea>
             </div>
 
-            <div class="flex justify-end">
-              <button
-                type="submit"
-                id="note-submit-btn"
-                class="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm tracking-wide shadow-xs transition cursor-pointer"
-              >
-                નોંધ સાચવો
-              </button>
+            <!-- Optional Short Title + Category + Big Save Button -->
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-center">
+              <div class="sm:col-span-5">
+                <input
+                  type="text"
+                  id="note-title"
+                  placeholder="ટૂંકું નામ (વૈકલ્પિક - ખાલી રાખશો તો ચાલશે)"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+                />
+              </div>
+              <div class="sm:col-span-4">
+                <select
+                  id="note-category"
+                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-800"
+                >
+                  <option value="સામાન્ય નોંધ">📝 સામાન્ય નોંધ</option>
+                  <option value="ઉત્પાદન">🏭 ઉત્પાદન</option>
+                  <option value="માલ / સ્ટોક">📦 માલ / સ્ટોક</option>
+                  <option value="મશીન રિપેરિંગ">🔧 મશીન રિપેરિંગ</option>
+                </select>
+              </div>
+              <div class="sm:col-span-3">
+                <button
+                  type="submit"
+                  id="note-submit-btn"
+                  class="w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm shadow-xs transition cursor-pointer"
+                >
+                  ✓ નોંધ સેવ કરો
+                </button>
+              </div>
             </div>
           </form>
         </div>
 
-        <!-- Search & Category Filter Bar -->
-        <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-          <!-- Search Input -->
+        <!-- Simple Search & Category Filter Bar -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           <div class="relative flex-1">
             <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -792,18 +691,17 @@
             <input
               type="text"
               id="note-search-input"
-              placeholder="નોંધ શોધો (શીર્ષક અથવા શબ્દ લખો)..."
-              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
+              placeholder="નોંધ શોધો..."
+              class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
             />
           </div>
 
-          <!-- Category Filter Pills -->
           <div id="note-category-filters" class="flex flex-wrap gap-1.5">
-            <button type="button" data-cat="All" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-amber-400">બધી નોંધ</button>
-            <button type="button" data-cat="ઉત્પાદન" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">ઉત્પાદન</button>
-            <button type="button" data-cat="માલ / સ્ટોક" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">માલ / સ્ટોક</button>
-            <button type="button" data-cat="મશીન રિપેરિંગ" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">મશીન રિપેરિંગ</button>
-            <button type="button" data-cat="સામાન્ય નોંધ" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">સામાન્ય નોંધ</button>
+            <button type="button" data-cat="All" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-amber-400">બધી</button>
+            <button type="button" data-cat="માલ / સ્ટોક" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">માલ / સ્ટોક</button>
+            <button type="button" data-cat="ઉત્પાદન" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">ઉત્પાદન</button>
+            <button type="button" data-cat="મશીન રિપેરિંગ" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">મશીન રિપેરિંગ</button>
+            <button type="button" data-cat="સામાન્ય નોંધ" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">સામાન્ય</button>
           </div>
         </div>
 
@@ -2553,6 +2451,23 @@
         const markAllPresentBtn = document.getElementById('mark-all-present-btn');
         const copyReportBtn = document.getElementById('copy-report-btn');
 
+        dateInput.addEventListener('change', (e) => {
+          if (e.target.value) {
+            state.selectedDate = e.target.value;
+            renderAttendancePage();
+          }
+        });
+
+        todayBtn.addEventListener('click', () => {
+          state.selectedDate = getTodayISO();
+          renderAttendancePage();
+          showToast('આજની તારીખ પસંદ કરવામાં આવી છે.', 'info');
+        });
+
+        cancelEditWorkerBtn.addEventListener('click', () => {
+          resetWorkerForm();
+        });
+
         // Auto-suggest OT hourly rate (Daily Rate / 8) when typing daily rate if OT rate is empty
         dailyRateInput.addEventListener('input', () => {
           const editId = document.getElementById('worker-edit-id').value;
@@ -2887,29 +2802,38 @@
           .map((note) => {
             const badgeClass = getCategoryBadgeClasses(note.category);
             return `
-              <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between gap-4 hover:border-slate-300 transition">
+              <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between gap-3 hover:border-slate-300 transition">
                 <div>
-                  <div class="flex items-center justify-between gap-2 mb-2.5">
-                    <span class="px-2.5 py-1 rounded-lg border text-xs font-extrabold ${badgeClass}">
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <span class="px-2.5 py-0.5 rounded-lg border text-xs font-extrabold ${badgeClass}">
                       ${escapeHTML(note.category)}
                     </span>
-                    <span class="text-xs text-slate-400 font-medium">${escapeHTML(note.updatedAt)}</span>
+                    <span class="text-[11px] text-slate-400 font-medium">${escapeHTML(note.updatedAt)}</span>
                   </div>
-                  <h3 class="text-base font-extrabold text-slate-900 mb-1.5">${escapeHTML(note.title)}</h3>
+                  ${note.title ? `<h3 class="text-sm font-extrabold text-slate-900 mb-1">${escapeHTML(note.title)}</h3>` : ''}
+                  <p class="text-base text-slate-800 whitespace-pre-line leading-relaxed font-medium">${escapeHTML(note.content)}</p>
+                </div>
                 <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                  <span class="text-[11px] font-bold text-slate-400">${note.savedBy ? 'સેવ કરનાર: ' + escapeHTML(note.savedBy) : ''}</span>
-                  <div class="flex items-center gap-2">
+                  <span class="text-[11px] font-bold text-slate-400">${note.savedBy ? 'સેવ: ' + escapeHTML(note.savedBy) : ''}</span>
+                  <div class="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      data-copy-note="${note.id}"
+                      class="px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-extrabold transition cursor-pointer"
+                    >
+                      📋 કોપી
+                    </button>
                     <button
                       type="button"
                       data-edit-note="${note.id}"
-                      class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 text-xs font-bold transition cursor-pointer"
+                      class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 text-xs font-bold transition cursor-pointer"
                     >
                       સુધારો
                     </button>
                     <button
                       type="button"
                       data-delete-note="${note.id}"
-                      class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold transition cursor-pointer"
+                      class="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold transition cursor-pointer"
                     >
                       દૂર કરો
                     </button>
@@ -2924,8 +2848,8 @@
       function resetNoteForm() {
         document.getElementById('note-form').reset();
         document.getElementById('note-edit-id').value = '';
-        document.getElementById('note-form-heading').textContent = 'કારખાનાની નવી નોંધ લખો';
-        document.getElementById('note-submit-btn').textContent = 'નોંધ સાચવો';
+        document.getElementById('note-form-heading').textContent = 'સરળ કારખાના નોટપેડ';
+        document.getElementById('note-submit-btn').textContent = '✓ નોંધ સેવ કરો';
         document.getElementById('cancel-edit-note-btn').classList.add('hidden');
       }
 
@@ -2935,19 +2859,37 @@
         const searchInput = document.getElementById('note-search-input');
         const categoryFilters = document.getElementById('note-category-filters');
         const notesGrid = document.getElementById('notes-grid');
+        const quickChips = document.getElementById('quick-note-chips');
+
+        if (quickChips) {
+          quickChips.addEventListener('click', (e) => {
+            const chip = e.target.closest('[data-quick-cat]');
+            if (!chip) return;
+            document.getElementById('note-category').value = chip.dataset.quickCat;
+            const contentBox = document.getElementById('note-content');
+            const prefix = chip.dataset.quickPrefix || '';
+            if (!contentBox.value.trim()) {
+              contentBox.value = prefix;
+            }
+            contentBox.focus();
+          });
+        }
 
         noteForm.addEventListener('submit', async (e) => {
           e.preventDefault();
           const editId = document.getElementById('note-edit-id').value;
-          const title = document.getElementById('note-title').value.trim();
+          const rawTitle = document.getElementById('note-title').value.trim();
           const category = document.getElementById('note-category').value;
           const content = document.getElementById('note-content').value.trim();
 
-          if (!title || !content) {
-            showToast('કૃપા કરીને નોંધનું શીર્ષક અને વિગત બંને લખો.', 'error');
+          if (!content) {
+            showToast('કૃપા કરીને નોંધમાં કંઈક લખો.', 'error');
             return;
           }
 
+          // Auto-create a short title from the first line if user leaves title blank
+          const firstLine = content.split('\n')[0].trim();
+          const title = rawTitle || (firstLine.length > 36 ? firstLine.slice(0, 36) + '...' : firstLine);
           const timestamp = getGujaratiTimestamp();
 
           if (editId) {
@@ -2974,7 +2916,7 @@
               createdAtMs: Date.now(),
             };
             await saveSingleNoteToCloud(newNote, `નવી નોંધ "${title}" (${category}) સેવ કરી.`);
-            showToast('નવી નોંધ સાચવી લેવામાં આવી છે!');
+            showToast('નોંધ સેવ થઈ ગઈ છે!');
           }
 
           resetNoteForm();
@@ -2998,6 +2940,30 @@
         });
 
         notesGrid.addEventListener('click', (e) => {
+          const copyBtn = e.target.closest('[data-copy-note]');
+          if (copyBtn) {
+            const noteId = copyBtn.dataset.copyNote;
+            const note = state.notes.find((n) => n.id === noteId);
+            if (!note) return;
+
+            const textToCopy = `*સેન્ચ્યુરી કારખાનું (${note.category})*\n${note.content}`;
+            const temp = document.createElement('textarea');
+            temp.value = textToCopy;
+            temp.style.position = 'fixed';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+              document.execCommand('copy');
+              showToast('નોંધ કોપી થઈ ગઈ! હવે WhatsApp માં મોકલી શકો છો.');
+            } catch (err) {
+              showToast('નોંધ કોપી થઈ શકી નથી.', 'error');
+            } finally {
+              document.body.removeChild(temp);
+            }
+            return;
+          }
+
           const editBtn = e.target.closest('[data-edit-note]');
           if (editBtn) {
             const noteId = editBtn.dataset.editNote;
