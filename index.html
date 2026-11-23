@@ -1,1447 +1,1507 @@
 <!DOCTYPE html>
-<html lang="gu-IN">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>કારખાના હાજરી અને ખાતાવહી (Karkhana Attendance & Khata)</title>
-  <!-- Tailwind CSS CDN -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Century Product — Karkhano Management</title>
+  <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Phosphor Icons for workshop / clean UI -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- Google Font: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
-      darkMode: 'class',
       theme: {
         extend: {
-          colors: {
-            brand: {
-              50: '#fffbeb',
-              100: '#fef3c7',
-              500: '#f59e0b',
-              600: '#d97706',
-              700: '#b45309',
-            },
-            slate: {
-              850: '#151e2e',
-              900: '#0f172a',
-            }
-          }
-        }
-      }
-    }
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+        },
+      },
+    };
   </script>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', 'Noto Sans Gujarati', system-ui, sans-serif;
-    }
-    .custom-scroll::-webkit-scrollbar {
-      height: 6px;
-      width: 6px;
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
-    }
-    .dark .custom-scroll::-webkit-scrollbar-thumb {
-      background: #475569;
-    }
-    @media print {
-      .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      body { background: white !important; color: black !important; }
-    }
-  </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
 
-  <!-- Header Banner -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 shadow-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-          <i class="ph-bold ph-factory text-2xl"></i>
+  <!-- ===================================================================== -->
+  <!-- TOAST NOTIFICATION / MESSAGE BOX (Replaces alert/confirm)             -->
+  <!-- ===================================================================== -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-xs w-full px-4 sm:px-0"></div>
+
+  <!-- ===================================================================== -->
+  <!-- CUSTOM CONFIRMATION MODAL                                             -->
+  <!-- ===================================================================== -->
+  <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/70 backdrop-blur-xs p-4">
+    <div class="bg-white border border-slate-300 rounded-xl shadow-2xl max-w-sm w-full p-6">
+      <div class="flex items-center gap-3 mb-3">
+        <div class="w-10 h-10 rounded-lg bg-red-100 text-red-700 flex items-center justify-center shrink-0">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+          </svg>
         </div>
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="font-bold text-lg leading-tight tracking-tight text-white flex items-center gap-2">
-              કારખાના હાજરી પત્રક
-              <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-medium border border-amber-500/30">Karkhana Hajri</span>
-            </h1>
-          </div>
-          <p class="text-xs text-slate-400">Helper Attendance, Roj & Upaad Ledger</p>
-        </div>
+        <h3 id="confirm-title" class="text-lg font-bold text-slate-900">Confirm Action</h3>
       </div>
-
-      <!-- Action Buttons & Badges -->
-      <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-        <div id="quickStatsBadge" class="hidden sm:flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700 text-xs">
-          <span class="text-slate-400">કુલ કારીગરો:</span>
-          <span id="badgeTotalHelpers" class="font-bold text-amber-400">0</span>
-        </div>
-
-        <button onclick="openAddHelperModal()" class="inline-flex items-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-semibold text-xs sm:text-sm px-3.5 py-2 rounded-lg transition shadow-sm active:scale-95">
-          <i class="ph-bold ph-user-plus text-base"></i>
-          <span>નવો હેલ્પર ઉમેરો</span>
+      <p id="confirm-message" class="text-sm text-slate-600 mb-6">Are you sure you want to proceed?</p>
+      <div class="flex justify-end gap-3">
+        <button id="confirm-cancel-btn" type="button" class="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition cursor-pointer">
+          Cancel
         </button>
-
-        <button onclick="exportDataBackup()" title="Backup / Export JSON" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 transition">
-          <i class="ph-bold ph-floppy-disk text-lg"></i>
+        <button id="confirm-ok-btn" type="button" class="px-4 py-2.5 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition cursor-pointer">
+          Delete
         </button>
       </div>
     </div>
+  </div>
 
-    <!-- Navigation Tabs -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 border-t border-slate-800/80">
-      <nav class="flex space-x-1 sm:space-x-4 overflow-x-auto py-2 custom-scroll" id="navTabs">
-        <button onclick="switchTab('daily')" id="tabBtn-daily" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-2 transition bg-amber-500/10 text-amber-400 border border-amber-500/30 whitespace-nowrap">
-          <i class="ph-bold ph-calendar-check text-base"></i>
-          <span>આજની હાજરી (Daily Hajri)</span>
-        </button>
-        <button onclick="switchTab('ledger')" id="tabBtn-ledger" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap">
-          <i class="ph-bold ph-notebook text-base"></i>
-          <span>મહિનાનો હિસાબ / ખાતાવહી (Khata)</span>
-        </button>
-        <button onclick="switchTab('helpers')" id="tabBtn-helpers" class="tab-btn px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition text-slate-400 hover:text-slate-200 hover:bg-slate-800 whitespace-nowrap">
-          <i class="ph-bold ph-users-three text-base"></i>
-          <span>કારીગર યાદી (Helpers List)</span>
-        </button>
-      </nav>
+  <!-- ===================================================================== -->
+  <!-- 1. LOGIN VIEW                                                         -->
+  <!-- ===================================================================== -->
+  <section id="login-view" class="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-10">
+    <div class="w-full max-w-md">
+      <!-- Industrial Top Accent Bar -->
+      <div class="h-2 w-full bg-amber-500 rounded-t-2xl"></div>
+      <div class="bg-slate-800 border border-slate-700 rounded-b-2xl shadow-2xl p-6 sm:p-8 text-white">
+        <!-- Brand Header -->
+        <div class="flex items-center gap-3.5 mb-6">
+          <div class="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-lg shrink-0">
+            <!-- Factory / Gear SVG Icon -->
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+            </svg>
+          </div>
+          <div>
+            <span class="inline-block text-[11px] font-bold uppercase tracking-widest text-amber-400">Workshop ERP</span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-white">Century Product</h1>
+            <p class="text-xs text-slate-400">Karkhano Attendance &amp; Operations</p>
+          </div>
+        </div>
+
+        <!-- Error Alert Box -->
+        <div id="login-error" class="hidden mb-5 p-3.5 rounded-xl bg-red-950/80 border border-red-500/60 text-red-200 text-sm flex items-start gap-2.5">
+          <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span id="login-error-text">Invalid Admin ID or Password.</span>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="space-y-4" novalidate>
+          <div>
+            <label for="login-id" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Admin ID</label>
+            <input
+              type="text"
+              id="login-id"
+              autocomplete="username"
+              placeholder="Enter admin ID"
+              class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 transition text-sm font-medium"
+              required
+            />
+          </div>
+
+          <div>
+            <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Password</label>
+            <div class="relative">
+              <input
+                type="password"
+                id="login-password"
+                autocomplete="current-password"
+                placeholder="Enter password"
+                class="w-full px-4 py-3 pr-12 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 transition text-sm font-medium"
+                required
+              />
+              <button
+                type="button"
+                id="toggle-password-btn"
+                aria-label="Toggle password visibility"
+                class="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-400 hover:text-amber-400 transition cursor-pointer"
+              >
+                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-amber-500/20 transition cursor-pointer"
+          >
+            Sign In to Karkhano
+          </button>
+        </form>
+
+        <!-- Quick-Fill Demo Credentials Box -->
+        <div class="mt-6 pt-5 border-t border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/60 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-400">
+            <p class="font-semibold text-slate-300">Default Admin Credentials:</p>
+            <p class="mt-0.5">ID: <code class="text-amber-400 font-mono font-bold">admin</code> &bull; Pass: <code class="text-amber-400 font-mono font-bold">admin@123</code></p>
+          </div>
+          <button
+            type="button"
+            id="quick-fill-btn"
+            class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-amber-300 text-xs font-bold transition shrink-0 cursor-pointer"
+          >
+            Auto-Fill
+          </button>
+        </div>
+      </div>
     </div>
-  </header>
+  </section>
 
-  <!-- Main Container -->
-  <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6 space-y-6">
+  <!-- ===================================================================== -->
+  <!-- 2. MAIN APPLICATION SHELL (Visible after Login)                       -->
+  <!-- ===================================================================== -->
+  <div id="app-shell" class="hidden flex-1 flex-col min-h-screen pb-20 md:pb-8">
 
-    <!-- TAB 1: DAILY ATTENDANCE (આજની હાજરી) -->
-    <section id="tab-daily" class="space-y-5">
-      <!-- Date Bar & Controls -->
-      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center bg-slate-50 border border-slate-300 rounded-xl p-1 shadow-inner">
-            <button onclick="changeDateOffset(-1)" class="p-2 hover:bg-slate-200 rounded-lg text-slate-700 transition" title="Previous Day">
-              <i class="ph-bold ph-caret-left text-base"></i>
+    <!-- Top Header Bar -->
+    <header class="bg-slate-900 text-white border-b-4 border-amber-500 sticky top-0 z-30 shadow-md">
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <!-- Brand Logo -->
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0">
+            CP
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight leading-none">Century Product</h1>
+            <p class="text-[11px] text-amber-400 font-semibold tracking-wider uppercase mt-0.5">Karkhano Management</p>
+          </div>
+        </div>
+
+        <!-- Desktop Navigation Tabs -->
+        <nav class="hidden md:flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700" aria-label="Primary Navigation">
+          <button data-nav="dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            Admin Overview
+          </button>
+          <button data-nav="attendance" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            Worker Attendance
+          </button>
+          <button data-nav="notes" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            Karkhano Notes
+          </button>
+        </nav>
+
+        <!-- Logout Button -->
+        <button
+          id="logout-btn"
+          type="button"
+          class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-red-600 text-slate-200 hover:text-white border border-slate-700 hover:border-red-500 text-xs sm:text-sm font-bold transition cursor-pointer"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+          </svg>
+          <span>Logout</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+
+      <!-- ================================================================= -->
+      <!-- PAGE A: ADMIN OVERVIEW DASHBOARD                                  -->
+      <!-- ================================================================= -->
+      <section id="page-dashboard" class="space-y-6">
+        <!-- Welcome Banner -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Admin Active
+            </span>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">Welcome, Karkhano Admin</h2>
+            <p id="dashboard-today-label" class="text-sm text-slate-500 mt-0.5">Today's Operations Summary</p>
+          </div>
+          <div class="flex flex-wrap gap-2.5">
+            <button
+              type="button"
+              data-jump="attendance"
+              class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-xs transition cursor-pointer flex items-center gap-2"
+            >
+              <span>Mark Today's Attendance</span>
+              <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+              </svg>
             </button>
-            <input type="date" id="selectedDateInput" onchange="onDateChanged(this.value)" class="bg-transparent text-sm font-semibold text-slate-800 px-2 py-1 outline-none border-0 cursor-pointer">
-            <button onclick="changeDateOffset(1)" class="p-2 hover:bg-slate-200 rounded-lg text-slate-700 transition" title="Next Day">
-              <i class="ph-bold ph-caret-right text-base"></i>
+            <button
+              type="button"
+              data-jump="notes"
+              class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold shadow-xs transition cursor-pointer"
+            >
+              + Add Note
             </button>
           </div>
-          <button onclick="setTodayDate()" class="text-xs font-semibold px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition">
-            આજની તારીખ (Today)
-          </button>
-          <span id="displaySelectedDateFormatted" class="text-xs sm:text-sm font-semibold text-slate-600 hidden md:inline-block"></span>
         </div>
 
-        <div class="flex items-center gap-2">
-          <button onclick="markAllPresent()" class="px-3.5 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition flex items-center gap-1.5 shadow-sm">
-            <i class="ph-bold ph-check-square-offset"></i>
-            <span>બધાને હાજર કરો (Mark All Present)</span>
-          </button>
-        </div>
-      </div>
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <!-- Total Workers -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-slate-800">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Workers</span>
+              <span class="p-2 rounded-lg bg-slate-100 text-slate-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
+                </svg>
+              </span>
+            </div>
+            <p id="stat-total-workers" class="text-3xl font-extrabold text-slate-900 mt-3">0</p>
+            <p class="text-xs text-slate-500 mt-1">Registered karkhano staff</p>
+          </div>
 
-      <!-- Quick Attendance Metrics -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-slate-500 font-medium">કુલ કારીગર (Total)</p>
-            <p class="text-2xl font-black text-slate-800 mt-0.5" id="metricTotal">0</p>
+          <!-- Present Today -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-emerald-600">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Present Today</span>
+              <span class="p-2 rounded-lg bg-emerald-50 text-emerald-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            </div>
+            <p id="stat-present-today" class="text-3xl font-extrabold text-emerald-700 mt-3">0</p>
+            <p id="stat-present-pct" class="text-xs text-slate-500 mt-1">0% attendance rate</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xl font-bold">
-            <i class="ph-bold ph-users"></i>
-          </div>
-        </div>
 
-        <div class="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-emerald-700 font-medium">હાજર (Present / Full)</p>
-            <p class="text-2xl font-black text-emerald-700 mt-0.5" id="metricPresent">0</p>
+          <!-- Absent / Half-Day Today -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-amber-500">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Half / Absent</span>
+              <span class="p-2 rounded-lg bg-amber-50 text-amber-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </span>
+            </div>
+            <p id="stat-absent-half-today" class="text-3xl font-extrabold text-amber-600 mt-3">0</p>
+            <p id="stat-absent-half-detail" class="text-xs text-slate-500 mt-1">0 Half-Day &bull; 0 Absent</p>
           </div>
-          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
-            <i class="ph-bold ph-check-circle"></i>
-          </div>
-        </div>
 
-        <div class="bg-amber-50/70 p-4 rounded-xl border border-amber-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-amber-700 font-medium">અડધો રોજ (Half Day)</p>
-            <p class="text-2xl font-black text-amber-700 mt-0.5" id="metricHalf">0</p>
-          </div>
-          <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl">
-            <i class="ph-bold ph-clock-countdown"></i>
-          </div>
-        </div>
-
-        <div class="bg-rose-50/70 p-4 rounded-xl border border-rose-200 shadow-sm flex items-center justify-between">
-          <div>
-            <p class="text-xs text-rose-700 font-medium">રજા / ગેરહાજર (Absent)</p>
-            <p class="text-2xl font-black text-rose-700 mt-0.5" id="metricAbsent">0</p>
-          </div>
-          <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl">
-            <i class="ph-bold ph-x-circle"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Attendance List -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 bg-slate-50/80 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-          <h2 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <i class="ph-bold ph-clipboard-text text-amber-500"></i>
-            <span>હાજરી વિગત (Attendance Marking)</span>
-          </h2>
-          <div class="relative w-full sm:w-64">
-            <i class="ph-bold ph-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-sm"></i>
-            <input type="text" id="dailySearchInput" oninput="renderDailyAttendance()" placeholder="નામથી શોધો (Search helper)..." class="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-slate-300 rounded-lg outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500">
+          <!-- Total Notes -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-blue-600">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Saved Notes</span>
+              <span class="p-2 rounded-lg bg-blue-50 text-blue-700">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                </svg>
+              </span>
+            </div>
+            <p id="stat-total-notes" class="text-3xl font-extrabold text-slate-900 mt-3">0</p>
+            <p class="text-xs text-slate-500 mt-1">Production &amp; stock logs</p>
           </div>
         </div>
 
-        <div id="dailyAttendanceContainer" class="divide-y divide-slate-100">
-          <!-- Dynamically populated rows -->
-        </div>
-
-        <!-- Empty state placeholder -->
-        <div id="emptyHelpersNotice" class="hidden p-12 text-center text-slate-500">
-          <i class="ph-duotone ph-user-list text-4xl text-slate-300 mb-2"></i>
-          <p class="font-medium">હજુ કોઈ હેલ્પર ઉમેરેલ નથી (No helpers added yet)</p>
-          <button onclick="openAddHelperModal()" class="mt-3 text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2 rounded-lg">
-            પહેલો હેલ્પર ઉમેરો +
-          </button>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 2: MONTHLY KHATA / ROJ-MEDA (મહિનાનો હિસાબ) -->
-    <section id="tab-ledger" class="hidden space-y-5">
-      <!-- Month & Year Selector & Export -->
-      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-        <div class="flex flex-wrap items-center gap-3">
-          <div class="flex items-center gap-2">
-            <label class="text-xs font-semibold text-slate-500">મહિનો (Month):</label>
-            <input type="month" id="selectedMonthInput" onchange="onMonthChanged(this.value)" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-amber-500 outline-none">
+        <!-- Two-Column Quick Overview Panels -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Today's Attendance Snapshot -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-extrabold text-slate-900">Today's Worker Status</h3>
+              <button type="button" data-jump="attendance" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
+                Open Full Sheet &rarr;
+              </button>
+            </div>
+            <div id="dashboard-worker-preview" class="divide-y divide-slate-100">
+              <!-- Populated by JS -->
+            </div>
           </div>
-          <button onclick="resetToCurrentMonth()" class="text-xs font-semibold px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-xl border border-slate-300">
-            ચાલુ મહિનો (Current)
-          </button>
-        </div>
 
-        <div class="flex items-center gap-2">
-          <button onclick="openAddAdvanceModal()" class="px-3.5 py-2 text-xs sm:text-sm bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-            <i class="ph-bold ph-hand-coins text-base"></i>
-            <span>ઉપાડ આપો (Give Advance / Upaad)</span>
-          </button>
-          <button onclick="exportMonthlyCSV()" class="px-3.5 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-            <i class="ph-bold ph-microsoft-excel-logo text-base"></i>
-            <span>Excel / CSV</span>
-          </button>
-          <button onclick="window.print()" class="px-3.5 py-2 text-xs sm:text-sm bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl transition flex items-center gap-1.5 shadow-sm">
-            <i class="ph-bold ph-printer text-base"></i>
-            <span>Print Report</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Month Totals Ribbon -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div class="bg-white p-4 rounded-xl border border-slate-200">
-          <p class="text-xs text-slate-500">મહિનાની કુલ હાજરી (Man-Days)</p>
-          <p class="text-xl font-black text-slate-800" id="monthStatTotalDays">0.0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200">
-          <p class="text-xs text-slate-500">કુલ બનતી મજૂરી (Total Wages)</p>
-          <p class="text-xl font-black text-emerald-600" id="monthStatGrossWages">₹0</p>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200">
-          <p class="text-xs text-slate-500">કુલ ચૂકવેલ ઉપાડ (Total Advance)</p>
-          <p class="text-xl font-black text-rose-600" id="monthStatTotalUpaad">₹0</p>
-        </div>
-        <div class="bg-amber-50 p-4 rounded-xl border border-amber-300">
-          <p class="text-xs text-amber-800 font-bold">ચૂકવવા પાત્ર બાકી (Net Balance)</p>
-          <p class="text-xl font-black text-amber-700" id="monthStatNetPayable">₹0</p>
-        </div>
-      </div>
-
-      <!-- Monthly Detailed Ledger Table -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-        <div class="p-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-          <div>
-            <h2 class="text-sm font-bold text-slate-800">મહિનાનું હાજરી કાર્ડ અને હિસાબ (Monthly Roj-Meda Grid)</h2>
-            <p class="text-xs text-slate-500">P = હાજર, 1/2 = અડધો રોજ, A = રજા, +OT = ઓવરટાઇમ કલાકો</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">P: Full</span>
-            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">H: 0.5</span>
-            <span class="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">A: Absent</span>
+          <!-- Recent Karkhano Notes -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-base font-extrabold text-slate-900">Recent Karkhano Notes</h3>
+              <button type="button" data-jump="notes" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
+                View All Notes &rarr;
+              </button>
+            </div>
+            <div id="dashboard-notes-preview" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
           </div>
         </div>
+      </section>
 
-        <div class="overflow-x-auto custom-scroll">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead class="bg-slate-100 text-slate-600 uppercase font-semibold text-[11px] border-b border-slate-200 sticky top-0">
-              <tr id="monthlyGridHeader">
-                <!-- Injected via JS (Worker, Daily Wage, 1..31, Total Days, Gross, Advance, Net) -->
-              </tr>
-            </thead>
-            <tbody id="monthlyGridBody" class="divide-y divide-slate-100 text-slate-700">
-              <!-- Injected via JS -->
-            </tbody>
-          </table>
+      <!-- ================================================================= -->
+      <!-- PAGE B: WORKER ATTENDANCE PAGE                                    -->
+      <!-- ================================================================= -->
+      <section id="page-attendance" class="hidden space-y-6">
+        <!-- Header & Date Controls -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h2 class="text-xl font-extrabold text-slate-900">Worker Attendance Register</h2>
+              <p class="text-sm text-slate-500">Tap P (Present), H (Half-Day), or A (Absent) to auto-save daily attendance.</p>
+            </div>
+
+            <!-- Date Picker & Export -->
+            <div class="flex flex-wrap items-center gap-2.5">
+              <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-2">
+                <label for="attendance-date" class="text-xs font-bold uppercase text-slate-600 mr-2">Date:</label>
+                <input
+                  type="date"
+                  id="attendance-date"
+                  class="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
+                />
+              </div>
+              <button
+                type="button"
+                id="today-date-btn"
+                class="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition cursor-pointer"
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                id="copy-report-btn"
+                class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center gap-2 cursor-pointer"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5A3.375 3.375 0 006.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
+                </svg>
+                <span>Copy Report</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Daily Attendance Summary Counters -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold uppercase text-slate-500">Total Staff</span>
+              <p id="att-count-total" class="text-2xl font-extrabold text-slate-900 mt-0.5">0</p>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold uppercase text-emerald-700">Present (P)</span>
+              <p id="att-count-present" class="text-2xl font-extrabold text-emerald-700 mt-0.5">0</p>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold uppercase text-amber-700">Half-Day (H)</span>
+              <p id="att-count-half" class="text-2xl font-extrabold text-amber-700 mt-0.5">0</p>
+            </div>
+            <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold uppercase text-red-700">Absent (A)</span>
+              <p id="att-count-absent" class="text-2xl font-extrabold text-red-700 mt-0.5">0</p>
+            </div>
+          </div>
         </div>
-      </div>
 
-      <!-- Advance / Upaad Records Table -->
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-            <i class="ph-bold ph-receipt text-indigo-600"></i>
-            <span>આ મહિનાના ઉપાડની એન્ટ્રી (Advance / Upaad History for selected month)</span>
+        <!-- Add New Worker Accordion / Card -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <h3 class="text-base font-extrabold text-slate-900 mb-3 flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-black">+</span>
+            <span>Add New Worker to Karkhano</span>
           </h3>
-          <button onclick="openAddAdvanceModal()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-300">
-            + નવો ઉપાડ
-          </button>
-        </div>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
-              <tr>
-                <th class="p-2.5">તારીખ (Date)</th>
-                <th class="p-2.5">કારીગર (Helper)</th>
-                <th class="p-2.5">રકમ (Amount)</th>
-                <th class="p-2.5">નોંધ / વિગત (Notes)</th>
-                <th class="p-2.5 text-right">ક્રિયા (Action)</th>
-              </tr>
-            </thead>
-            <tbody id="advanceEntriesTableBody" class="divide-y divide-slate-100">
-              <!-- Dynamically populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <!-- TAB 3: HELPERS DIRECTORY (કારીગર યાદી) -->
-    <section id="tab-helpers" class="hidden space-y-5">
-      <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 class="text-base font-bold text-slate-800">કારીગર / હેલ્પર લિસ્ટ (Staff Directory)</h2>
-          <p class="text-xs text-slate-500">Manage names, daily roj rates, phone numbers and roles</p>
-        </div>
-        <button onclick="openAddHelperModal()" class="bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2 rounded-xl transition shadow-sm flex items-center gap-2">
-          <i class="ph-bold ph-plus-circle text-base"></i>
-          <span>નવો હેલ્પર ઉમેરો (Add Helper)</span>
-        </button>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="helpersCardsContainer">
-        <!-- Rendered via JS -->
-      </div>
-    </section>
-
-  </main>
-
-  <!-- MODAL: ADD / EDIT HELPER -->
-  <div id="helperModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in duration-150">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-        <h3 class="font-bold text-slate-800 text-base" id="helperModalTitle">નવો હેલ્પર ઉમેરો (Add Helper)</h3>
-        <button onclick="closeHelperModal()" class="text-slate-400 hover:text-slate-600 text-xl">
-          <i class="ph-bold ph-x"></i>
-        </button>
-      </div>
-
-      <form id="helperForm" onsubmit="saveHelper(event)" class="space-y-4">
-        <input type="hidden" id="helperFormId">
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">પૂરું નામ (Helper Name) *</label>
-          <input type="text" id="helperName" required placeholder="દા.ત. રમેશભાઈ પટેલ / Ramesh" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+          <form id="add-worker-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label for="worker-name" class="block text-xs font-bold text-slate-600 mb-1">Worker Name *</label>
+              <input
+                type="text"
+                id="worker-name"
+                placeholder="e.g. Rameshbhai Patel"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+              />
+            </div>
+            <div>
+              <label for="worker-role" class="block text-xs font-bold text-slate-600 mb-1">Role / Department *</label>
+              <select
+                id="worker-role"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+              >
+                <option value="Karigar">Karigar (Craftsman)</option>
+                <option value="Machine Operator">Machine Operator</option>
+                <option value="Helper">Helper</option>
+                <option value="Welder / Fitter">Welder / Fitter</option>
+                <option value="Packing & Dispatch">Packing &amp; Dispatch</option>
+                <option value="Supervisor">Supervisor</option>
+              </select>
+            </div>
+            <div>
+              <label for="worker-phone" class="block text-xs font-bold text-slate-600 mb-1">Phone / Daily Wage (Optional)</label>
+              <input
+                type="text"
+                id="worker-phone"
+                placeholder="e.g. 9876543210 or ₹600/day"
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+              />
+            </div>
+            <div class="flex items-end">
+              <button
+                type="submit"
+                class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-extrabold text-sm uppercase tracking-wider shadow-xs transition cursor-pointer"
+              >
+                Add Worker
+              </button>
+            </div>
+          </form>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">દૈનિક રોજ / Daily Wage (₹) *</label>
-            <input type="number" id="helperWage" min="1" required placeholder="દા.ત. 450" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500 font-bold">
+        <!-- Worker List Header + Mark All Present Helper -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">
+                Attendance Sheet for <span id="selected-date-display" class="text-amber-700">Today</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Unmarked workers are highlighted until a status is selected.</p>
+            </div>
+            <button
+              type="button"
+              id="mark-all-present-btn"
+              class="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-extrabold uppercase tracking-wider transition cursor-pointer self-start sm:self-auto"
+            >
+              &#10003; Mark All Present
+            </button>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">કામ / ખાતું (Role/Dept)</label>
-            <input type="text" id="helperRole" placeholder="દા.ત. લેથ, પેકિંગ, હેલ્પર" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+
+          <!-- Workers List Container -->
+          <div id="worker-list-container" class="space-y-3">
+            <!-- Rendered dynamically via JS -->
           </div>
         </div>
+      </section>
 
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">મોબાઇલ નંબર (Phone)</label>
-            <input type="tel" id="helperPhone" placeholder="9876543210" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
+      <!-- ================================================================= -->
+      <!-- PAGE C: KARKHANO NOTES PAGE                                       -->
+      <!-- ================================================================= -->
+      <section id="page-notes" class="hidden space-y-6">
+        <!-- Add / Edit Note Card -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 id="note-form-heading" class="text-xl font-extrabold text-slate-900">Create Karkhano Note</h2>
+              <p class="text-sm text-slate-500">Record daily production targets, raw material orders, machine repairs, or reminders.</p>
+            </div>
+            <button
+              type="button"
+              id="cancel-edit-note-btn"
+              class="hidden px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+            >
+              Cancel Edit
+            </button>
           </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">જોડાવાની તારીખ (Joining)</label>
-            <input type="date" id="helperJoining" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
-          </div>
-        </div>
 
-        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeHelperModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
-            રદ કરો (Cancel)
-          </button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-xl transition">
-            સાચવો (Save Helper)
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: ADD ADVANCE / UPAAD -->
-  <div id="advanceModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in duration-150">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
-        <h3 class="font-bold text-slate-800 text-base">ઉપાડ / એડવાન્સ નોંધણી (Upaad Entry)</h3>
-        <button onclick="closeAdvanceModal()" class="text-slate-400 hover:text-slate-600 text-xl">
-          <i class="ph-bold ph-x"></i>
-        </button>
-      </div>
-
-      <form id="advanceForm" onsubmit="saveAdvance(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">કારીગર પસંદ કરો (Select Helper) *</label>
-          <select id="advanceHelperSelect" required class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
-            <!-- options inserted via JS -->
-          </select>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">તારીખ (Date) *</label>
-            <input type="date" id="advanceDate" required class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">રકમ / Amount (₹) *</label>
-            <input type="number" id="advanceAmount" min="1" required placeholder="500" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500 font-bold text-rose-600">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">વિગત / શેના માટે (Remark / Reason)</label>
-          <input type="text" id="advanceRemark" placeholder="દા.ત. રોકડ આપ્યા, દિવાળી ખર્ચ, તહેવાર" class="w-full text-sm border border-slate-300 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-amber-500">
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-          <button type="button" onclick="closeAdvanceModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
-            રદ કરો
-          </button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition">
-            ઉપાડ જમા કરો (Add Upaad)
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: WORKER MONTHLY PAYSLIP / STATEMENT -->
-  <div id="payslipModal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-        <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-          <i class="ph-bold ph-receipt text-amber-500"></i>
-          <span>કારીગર માસિક પગાર સ્લિપ (Monthly Payslip)</span>
-        </h3>
-        <button onclick="closePayslipModal()" class="text-slate-400 hover:text-slate-600 text-xl">
-          <i class="ph-bold ph-x"></i>
-        </button>
-      </div>
-
-      <div id="payslipContent" class="py-4 space-y-4">
-        <!-- Rendered via JS -->
-      </div>
-
-      <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-        <button onclick="printElement('payslipContent')" class="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl flex items-center gap-1.5">
-          <i class="ph-bold ph-printer"></i>
-          <span>પ્રિન્ટ કાઢો (Print Slip)</span>
-        </button>
-        <button onclick="closePayslipModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">
-          બંધ કરો (Close)
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast Notification Box -->
-  <div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
-
-  <!-- JAVASCRIPT APPLICATION LOGIC -->
-  <script>
-    /**
-     * Karkhana Attendance & Khata Management Engine
-     * Data is stored in browser localStorage.
-     */
-    const STORAGE_KEY = 'karkhana_attendance_v2';
-
-    // Sample initial dataset for instant usage
-    const INITIAL_DATA = {
-      helpers: [
-        { id: 'h1', name: 'ગોપાલભાઈ રાવલ (Gopal)', phone: '9825012345', wage: 550, role: 'લેથ ઓપરેટર (Lathe)', joiningDate: '2025-01-10' },
-        { id: 'h2', name: 'મુકેશ સોલંકી (Mukesh)', phone: '9712045678', wage: 450, role: 'કટીંગ / હેલ્પર (Cutting)', joiningDate: '2025-02-01' },
-        { id: 'h3', name: 'દિનેશ પરમાર (Dinesh)', phone: '9909076543', wage: 400, role: 'પેકિંગ / લોડિંગ (Packing)', joiningDate: '2025-03-05' },
-        { id: 'h4', name: 'સંજય ઠાકોર (Sanjay)', phone: '9898032145', wage: 500, role: 'વેલ્ડીંગ (Welding)', joiningDate: '2025-01-20' },
-        { id: 'h5', name: 'અશોક વાઘેલા (Ashok)', phone: '9428098765', wage: 420, role: 'જનરલ હેલ્પર (General)', joiningDate: '2025-04-12' }
-      ],
-      // attendance keyed by "YYYY-MM-DD" -> { [helperId]: { status: 'P'|'H'|'A', otHours: 0 } }
-      attendance: {},
-      // advances: array of { id, helperId, date: "YYYY-MM-DD", amount, remark }
-      advances: []
-    };
-
-    let state = {
-      helpers: [],
-      attendance: {},
-      advances: [],
-      selectedDate: '',
-      selectedMonth: '',
-      currentTab: 'daily',
-      searchDailyTerm: ''
-    };
-
-    // Load initial state or localStorage
-    function init() {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          state.helpers = parsed.helpers || [];
-          state.attendance = parsed.attendance || {};
-          state.advances = parsed.advances || [];
-        } catch (e) {
-          console.error("Failed to parse storage, using defaults", e);
-          seedData();
-        }
-      } else {
-        seedData();
-      }
-
-      // Default to Today's date and Month
-      const today = new Date();
-      state.selectedDate = formatDateToISO(today);
-      state.selectedMonth = formatMonthToISO(today);
-
-      // Seed dummy records for current month so UI looks rich immediately if empty
-      seedCurrentMonthSamplesIfEmpty();
-
-      // UI setup
-      document.getElementById('selectedDateInput').value = state.selectedDate;
-      document.getElementById('selectedMonthInput').value = state.selectedMonth;
-      updateDisplayDateText();
-
-      // Render
-      renderAll();
-    }
-
-    function seedData() {
-      state.helpers = JSON.parse(JSON.stringify(INITIAL_DATA.helpers));
-      state.attendance = {};
-      state.advances = [];
-    }
-
-    function seedCurrentMonthSamplesIfEmpty() {
-      // If no attendance exists for current month, auto-populate past few days so tables are immediately populated
-      const yyyy_mm = state.selectedMonth;
-      const hasAnyThisMonth = Object.keys(state.attendance).some(d => d.startsWith(yyyy_mm));
-      if (!hasAnyThisMonth && state.helpers.length > 0) {
-        const todayDate = new Date();
-        const curDay = todayDate.getDate();
-        // fill a few recent days
-        for (let day = 1; day <= Math.min(curDay, 10); day++) {
-          const dStr = `${yyyy_mm}-${String(day).padStart(2, '0')}`;
-          state.attendance[dStr] = {};
-          state.helpers.forEach((h, idx) => {
-            // Random believable statuses
-            let st = 'P';
-            let ot = 0;
-            if ((day + idx) % 7 === 0) st = 'A';
-            else if ((day + idx) % 5 === 0) st = 'H';
-            else if (day % 4 === 0) ot = 2; // 2 hrs overtime
-            state.attendance[dStr][h.id] = { status: st, otHours: ot };
-          });
-        }
-        // Add one sample advance
-        if (state.helpers[0]) {
-          state.advances.push({
-            id: 'adv_' + Date.now(),
-            helperId: state.helpers[0].id,
-            date: `${yyyy_mm}-05`,
-            amount: 1500,
-            remark: 'દિવાળી પૂર્વે રોકડ ઉપાડ'
-          });
-        }
-        saveToStorage(false);
-      }
-    }
-
-    function saveToStorage(notify = false) {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
-          helpers: state.helpers,
-          attendance: state.attendance,
-          advances: state.advances
-        }));
-        if (notify) showToast('ડેટા સફળતાપૂર્વક સચવાયો (Saved)', 'success');
-      } catch (e) {
-        console.error('Storage full or error', e);
-        showToast('ડેટા સેવ કરવામાં ક્ષતિ!', 'error');
-      }
-    }
-
-    // Helper Date utilities
-    function formatDateToISO(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    }
-
-    function formatMonthToISO(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      return `${year}-${month}`;
-    }
-
-    function updateDisplayDateText() {
-      const parts = state.selectedDate.split('-');
-      if (parts.length === 3) {
-        const dateObj = new Date(parts[0], parts[1] - 1, parts[2]);
-        const options = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
-        document.getElementById('displaySelectedDateFormatted').innerText = dateObj.toLocaleDateString('gu-IN', options);
-      }
-    }
-
-    // Tab Navigation
-    function switchTab(tab) {
-      state.currentTab = tab;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/30');
-        btn.classList.add('text-slate-400');
-      });
-      document.getElementById(`tabBtn-${tab}`).classList.add('bg-amber-500/10', 'text-amber-400', 'border', 'border-amber-500/30');
-      document.getElementById(`tabBtn-${tab}`).classList.remove('text-slate-400');
-
-      document.getElementById('tab-daily').classList.add('hidden');
-      document.getElementById('tab-ledger').classList.add('hidden');
-      document.getElementById('tab-helpers').classList.add('hidden');
-
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-
-      if (tab === 'daily') renderDailyAttendance();
-      if (tab === 'ledger') renderMonthlyLedger();
-      if (tab === 'helpers') renderHelpersList();
-    }
-
-    function renderAll() {
-      document.getElementById('badgeTotalHelpers').innerText = state.helpers.length;
-      document.getElementById('metricTotal').innerText = state.helpers.length;
-      renderDailyAttendance();
-      renderMonthlyLedger();
-      renderHelpersList();
-    }
-
-    // ==========================================
-    // DAILY ATTENDANCE LOGIC
-    // ==========================================
-
-    function onDateChanged(newDate) {
-      state.selectedDate = newDate;
-      updateDisplayDateText();
-      // Keep month synced
-      const month = newDate.substring(0, 7);
-      if (month !== state.selectedMonth) {
-        state.selectedMonth = month;
-        document.getElementById('selectedMonthInput').value = month;
-      }
-      renderDailyAttendance();
-    }
-
-    function changeDateOffset(offsetDays) {
-      const cur = new Date(state.selectedDate);
-      cur.setDate(cur.getDate() + offsetDays);
-      const newD = formatDateToISO(cur);
-      state.selectedDate = newD;
-      document.getElementById('selectedDateInput').value = newD;
-      onDateChanged(newD);
-    }
-
-    function setTodayDate() {
-      const today = formatDateToISO(new Date());
-      state.selectedDate = today;
-      document.getElementById('selectedDateInput').value = today;
-      onDateChanged(today);
-    }
-
-    function getAttendanceForDate(dateStr) {
-      if (!state.attendance[dateStr]) {
-        state.attendance[dateStr] = {};
-      }
-      return state.attendance[dateStr];
-    }
-
-    function setHelperAttendance(helperId, status) {
-      const dayRecords = getAttendanceForDate(state.selectedDate);
-      const prevOt = (dayRecords[helperId] && dayRecords[helperId].otHours) ? dayRecords[helperId].otHours : 0;
-      
-      // If clicking same status again, leave as is or toggle
-      dayRecords[helperId] = {
-        status: status,
-        otHours: prevOt
-      };
-      saveToStorage(false);
-      renderDailyAttendance();
-      // update ledger in background
-      renderMonthlyLedgerSummaryStats();
-    }
-
-    function updateHelperOT(helperId, hours) {
-      const dayRecords = getAttendanceForDate(state.selectedDate);
-      const curStatus = (dayRecords[helperId] && dayRecords[helperId].status) ? dayRecords[helperId].status : 'P';
-      dayRecords[helperId] = {
-        status: curStatus,
-        otHours: Math.max(0, parseFloat(hours) || 0)
-      };
-      saveToStorage(false);
-      renderDailyAttendanceCounters();
-    }
-
-    function markAllPresent() {
-      const dayRecords = getAttendanceForDate(state.selectedDate);
-      state.helpers.forEach(h => {
-        const curOt = (dayRecords[h.id] && dayRecords[h.id].otHours) ? dayRecords[h.id].otHours : 0;
-        dayRecords[h.id] = { status: 'P', otHours: curOt };
-      });
-      saveToStorage(true);
-      renderDailyAttendance();
-      showToast('બધા કારીગરો હાજર માર્ક થયા (All Marked Present)', 'success');
-    }
-
-    function renderDailyAttendance() {
-      const container = document.getElementById('dailyAttendanceContainer');
-      const emptyNotice = document.getElementById('emptyHelpersNotice');
-      const searchTerm = (document.getElementById('dailySearchInput').value || '').trim().toLowerCase();
-
-      if (state.helpers.length === 0) {
-        container.innerHTML = '';
-        emptyNotice.classList.remove('hidden');
-        renderDailyAttendanceCounters();
-        return;
-      } else {
-        emptyNotice.classList.add('hidden');
-      }
-
-      const dayRecords = getAttendanceForDate(state.selectedDate);
-
-      const filtered = state.helpers.filter(h => {
-        return h.name.toLowerCase().includes(searchTerm) || (h.role && h.role.toLowerCase().includes(searchTerm));
-      });
-
-      let html = '';
-      filtered.forEach(helper => {
-        const record = dayRecords[helper.id] || { status: 'P', otHours: 0 };
-        const status = record.status || 'P';
-        const otHours = record.otHours || 0;
-
-        // Status pill classes
-        const isPresent = status === 'P';
-        const isHalf = status === 'H';
-        const isAbsent = status === 'A';
-
-        html += `
-          <div class="p-3.5 sm:p-4 hover:bg-slate-50 transition flex flex-col md:flex-row md:items-center justify-between gap-3">
-            <div class="flex items-center space-x-3">
-              <div class="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                isPresent ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
-                isHalf ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                'bg-rose-100 text-rose-800 border border-rose-300'
-              }">
-                ${helper.name.charAt(0)}
+          <form id="note-form" class="space-y-4">
+            <input type="hidden" id="note-edit-id" value="" />
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="sm:col-span-2">
+                <label for="note-title" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Note Title *</label>
+                <input
+                  type="text"
+                  id="note-title"
+                  placeholder="e.g. Order 500kg MS Sheet / Lathe #2 Servicing"
+                  required
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+                />
               </div>
               <div>
-                <div class="flex items-center gap-2">
-                  <h4 class="font-bold text-slate-800 text-sm">${escapeHtml(helper.name)}</h4>
-                  <span class="text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-600 font-medium">${escapeHtml(helper.role || 'કારીગર')}</span>
-                </div>
-                <div class="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                  <span>રોજ: <strong class="text-slate-800 font-semibold">₹${helper.wage}</strong></span>
-                  ${helper.phone ? `<span>• <i class="ph-bold ph-phone text-[10px]"></i> ${escapeHtml(helper.phone)}</span>` : ''}
-                </div>
+                <label for="note-category" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Category</label>
+                <select
+                  id="note-category"
+                  class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-800"
+                >
+                  <option value="Production">Production</option>
+                  <option value="Material/Stock">Material / Stock</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="General">General</option>
+                </select>
               </div>
             </div>
 
-            <!-- Action buttons (Present, Half, Absent, Overtime) -->
-            <div class="flex flex-wrap items-center gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
-              <div class="inline-flex rounded-xl p-1 bg-slate-100 border border-slate-200">
-                <button onclick="setHelperAttendance('${helper.id}', 'P')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                  isPresent ? 'bg-emerald-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }">
-                  <i class="ph-bold ph-check"></i>
-                  <span>હાજર (Full)</span>
-                </button>
-
-                <button onclick="setHelperAttendance('${helper.id}', 'H')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                  isHalf ? 'bg-amber-500 text-slate-950 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }">
-                  <i class="ph-bold ph-circle-half"></i>
-                  <span>અડધો રોજ (Half)</span>
-                </button>
-
-                <button onclick="setHelperAttendance('${helper.id}', 'A')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
-                  isAbsent ? 'bg-rose-600 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                }">
-                  <i class="ph-bold ph-x"></i>
-                  <span>રજા (Absent)</span>
-                </button>
-              </div>
-
-              <!-- Overtime Input -->
-              <div class="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200" title="ઓવરટાઇમ કલાકો">
-                <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">OT કલાક:</span>
-                <input type="number" step="0.5" min="0" max="16" value="${otHours}" onchange="updateHelperOT('${helper.id}', this.value)" class="w-12 bg-white text-center font-bold text-xs py-1 border border-slate-300 rounded-lg outline-none focus:border-amber-500">
-              </div>
-            </div>
-          </div>
-        `;
-      });
-
-      if (filtered.length === 0) {
-        html = `<div class="p-8 text-center text-slate-400 text-xs">કોઈ કારીગર મળ્યો નથી. (No matches found)</div>`;
-      }
-
-      container.innerHTML = html;
-      renderDailyAttendanceCounters();
-    }
-
-    function renderDailyAttendanceCounters() {
-      const dayRecords = getAttendanceForDate(state.selectedDate);
-      let pres = 0, half = 0, abs = 0;
-      state.helpers.forEach(h => {
-        const r = dayRecords[h.id] || { status: 'P' };
-        if (r.status === 'P') pres++;
-        else if (r.status === 'H') half++;
-        else if (r.status === 'A') abs++;
-      });
-
-      document.getElementById('metricTotal').innerText = state.helpers.length;
-      document.getElementById('metricPresent').innerText = pres;
-      document.getElementById('metricHalf').innerText = half;
-      document.getElementById('metricAbsent').innerText = abs;
-      document.getElementById('badgeTotalHelpers').innerText = state.helpers.length;
-    }
-
-    // ==========================================
-    // MONTHLY LEDGER / ROJ-MEDA (ખાતાવહી)
-    // ==========================================
-
-    function onMonthChanged(newMonth) {
-      state.selectedMonth = newMonth;
-      renderMonthlyLedger();
-    }
-
-    function resetToCurrentMonth() {
-      const cur = formatMonthToISO(new Date());
-      state.selectedMonth = cur;
-      document.getElementById('selectedMonthInput').value = cur;
-      renderMonthlyLedger();
-    }
-
-    function getDaysInMonth(year, monthIndex) {
-      return new Date(year, monthIndex + 1, 0).getDate();
-    }
-
-    function renderMonthlyLedger() {
-      const [yearStr, monthStr] = state.selectedMonth.split('-');
-      const year = parseInt(yearStr, 10);
-      const monthIdx = parseInt(monthStr, 10) - 1;
-      const totalDays = getDaysInMonth(year, monthIdx);
-
-      // Construct Header
-      const headerRow = document.getElementById('monthlyGridHeader');
-      let headerHtml = `
-        <th class="p-2.5 sticky left-0 bg-slate-100 z-10 min-w-[150px] shadow-[1px_0_0_0_#e2e8f0]">કારીગર (Helper)</th>
-        <th class="p-2.5 text-center min-w-[65px]">દૈનિક રોજ</th>
-      `;
-
-      for (let d = 1; d <= totalDays; d++) {
-        headerHtml += `<th class="p-1 text-center font-bold text-[11px] min-w-[28px]">${d}</th>`;
-      }
-
-      headerHtml += `
-        <th class="p-2.5 text-center font-bold bg-slate-200/60 min-w-[80px]">હાજર દિવસ</th>
-        <th class="p-2.5 text-right font-bold bg-slate-200/60 min-w-[85px]">કુલ મજૂરી</th>
-        <th class="p-2.5 text-right font-bold text-rose-700 bg-rose-50/70 min-w-[85px]">ઉપાડ (Adv)</th>
-        <th class="p-2.5 text-right font-bold text-emerald-800 bg-emerald-50 min-w-[95px]">ચૂકવવા પાત્ર</th>
-        <th class="p-2 text-center min-w-[50px] no-print">સ્લિપ</th>
-      `;
-      headerRow.innerHTML = headerHtml;
-
-      // Construct Body
-      const body = document.getElementById('monthlyGridBody');
-      let bodyHtml = '';
-
-      let grandTotalEffectiveDays = 0;
-      let grandTotalGrossWages = 0;
-      let grandTotalAdvances = 0;
-      let grandTotalNet = 0;
-
-      state.helpers.forEach(helper => {
-        let effectiveDays = 0;
-        let totalOtHours = 0;
-
-        let daysCells = '';
-        for (let d = 1; d <= totalDays; d++) {
-          const dateStr = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
-          const rec = state.attendance[dateStr] ? state.attendance[dateStr][helper.id] : null;
-          
-          let cellText = '-';
-          let cellClass = 'text-slate-300';
-
-          if (rec) {
-            if (rec.status === 'P') {
-              effectiveDays += 1;
-              cellText = 'P';
-              cellClass = 'bg-emerald-50 text-emerald-700 font-bold';
-            } else if (rec.status === 'H') {
-              effectiveDays += 0.5;
-              cellText = '½';
-              cellClass = 'bg-amber-100 text-amber-800 font-bold';
-            } else if (rec.status === 'A') {
-              cellText = 'A';
-              cellClass = 'bg-rose-50 text-rose-600 font-bold';
-            }
-
-            if (rec.otHours > 0) {
-              totalOtHours += rec.otHours;
-              cellText += `*`;
-            }
-          }
-
-          daysCells += `<td class="p-1 text-center border-l border-slate-100 ${cellClass}" title="Day ${d}: ${cellText}">${cellText}</td>`;
-        }
-
-        // Wage calculations: Hourly rate approximation = Daily wage / 8
-        const hourlyRate = helper.wage / 8;
-        const otWage = Math.round(totalOtHours * hourlyRate);
-        const baseWage = Math.round(effectiveDays * helper.wage);
-        const grossWages = baseWage + otWage;
-
-        // Sum advances for this helper in this month
-        const helperAdvances = state.advances
-          .filter(a => a.helperId === helper.id && a.date.startsWith(state.selectedMonth))
-          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
-
-        const netPayable = grossWages - helperAdvances;
-
-        grandTotalEffectiveDays += effectiveDays;
-        grandTotalGrossWages += grossWages;
-        grandTotalAdvances += helperAdvances;
-        grandTotalNet += netPayable;
-
-        bodyHtml += `
-          <tr class="hover:bg-slate-50/70 transition border-b border-slate-100">
-            <td class="p-2.5 font-bold sticky left-0 bg-white shadow-[1px_0_0_0_#e2e8f0]">
-              <div class="truncate max-w-[140px] text-slate-800" title="${escapeHtml(helper.name)}">${escapeHtml(helper.name)}</div>
-              <div class="text-[10px] text-slate-400 font-normal">${escapeHtml(helper.role || 'Worker')}</div>
-            </td>
-            <td class="p-2 text-center font-semibold text-slate-600">₹${helper.wage}</td>
-            ${daysCells}
-            <td class="p-2 text-center font-bold bg-slate-50 text-slate-800">${effectiveDays.toFixed(1)}${totalOtHours > 0 ? `<div class="text-[10px] text-amber-600">+${totalOtHours}h OT</div>` : ''}</td>
-            <td class="p-2 text-right font-bold text-slate-900 bg-slate-50">₹${grossWages.toLocaleString('en-IN')}</td>
-            <td class="p-2 text-right font-bold text-rose-600 bg-rose-50/30">₹${helperAdvances.toLocaleString('en-IN')}</td>
-            <td class="p-2 text-right font-black ${netPayable < 0 ? 'text-rose-600' : 'text-emerald-700'} bg-emerald-50/30">
-              ₹${netPayable.toLocaleString('en-IN')}
-            </td>
-            <td class="p-2 text-center no-print">
-              <button onclick="openPayslipModal('${helper.id}', ${effectiveDays}, ${grossWages}, ${helperAdvances}, ${netPayable}, ${totalOtHours})" class="p-1 hover:bg-slate-200 text-slate-600 rounded transition" title="Print Slip">
-                <i class="ph-bold ph-receipt text-base"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-
-      if (state.helpers.length === 0) {
-        bodyHtml = `<tr><td colspan="${totalDays + 6}" class="p-8 text-center text-slate-400">કારીગરો ઉમેર્યા પછી હિસાબ દેખાશે.</td></tr>`;
-      }
-
-      body.innerHTML = bodyHtml;
-
-      // Update Summary Ribbons
-      document.getElementById('monthStatTotalDays').innerText = grandTotalEffectiveDays.toFixed(1);
-      document.getElementById('monthStatGrossWages').innerText = `₹${grandTotalGrossWages.toLocaleString('en-IN')}`;
-      document.getElementById('monthStatTotalUpaad').innerText = `₹${grandTotalAdvances.toLocaleString('en-IN')}`;
-      document.getElementById('monthStatNetPayable').innerText = `₹${grandTotalNet.toLocaleString('en-IN')}`;
-
-      renderAdvanceEntriesTable();
-    }
-
-    function renderMonthlyLedgerSummaryStats() {
-      // Light update if needed without full dom redraw
-      if (state.currentTab === 'ledger') {
-        renderMonthlyLedger();
-      }
-    }
-
-    function renderAdvanceEntriesTable() {
-      const tbody = document.getElementById('advanceEntriesTableBody');
-      const filtered = state.advances
-        .filter(a => a.date.startsWith(state.selectedMonth))
-        .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400 text-xs">આ મહિનામાં કોઈ ઉપાડ નોંધાયેલ નથી (No advance records for this month)</td></tr>`;
-        return;
-      }
-
-      let html = '';
-      filtered.forEach(item => {
-        const helper = state.helpers.find(h => h.id === item.helperId) || { name: 'અજ્ઞાત (Deleted)' };
-        html += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-2.5 font-medium text-slate-700">${item.date}</td>
-            <td class="p-2.5 font-bold text-slate-800">${escapeHtml(helper.name)}</td>
-            <td class="p-2.5 font-bold text-rose-600">₹${Number(item.amount).toLocaleString('en-IN')}</td>
-            <td class="p-2.5 text-slate-500">${escapeHtml(item.remark || '-')}</td>
-            <td class="p-2.5 text-right">
-              <button onclick="deleteAdvance('${item.id}')" class="text-rose-500 hover:text-rose-700 p-1" title="ડિલીટ કરો">
-                <i class="ph-bold ph-trash"></i>
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-      tbody.innerHTML = html;
-    }
-
-    // ==========================================
-    // HELPERS LIST (કારીગર ડિરેક્ટરી)
-    // ==========================================
-
-    function renderHelpersList() {
-      const container = document.getElementById('helpersCardsContainer');
-      if (state.helpers.length === 0) {
-        container.innerHTML = `
-          <div class="col-span-full p-8 text-center bg-white rounded-2xl border border-slate-200">
-            <p class="text-slate-500 font-medium">કોઈ કારીગર નથી. નવો ઉમેરો.</p>
-          </div>
-        `;
-        return;
-      }
-
-      let html = '';
-      state.helpers.forEach(h => {
-        // Quick monthly calculation for card preview
-        const daysInMonth = getDaysInMonth(new Date().getFullYear(), new Date().getMonth());
-        let monthDays = 0;
-        const curM = formatMonthToISO(new Date());
-
-        for (let d = 1; d <= daysInMonth; d++) {
-          const dStr = `${curM}-${String(d).padStart(2, '0')}`;
-          if (state.attendance[dStr] && state.attendance[dStr][h.id]) {
-            const st = state.attendance[dStr][h.id].status;
-            if (st === 'P') monthDays += 1;
-            else if (st === 'H') monthDays += 0.5;
-          }
-        }
-
-        const totalAdv = state.advances
-          .filter(a => a.helperId === h.id && a.date.startsWith(curM))
-          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
-
-        const estWage = (monthDays * h.wage) - totalAdv;
-
-        html += `
-          <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow transition flex flex-col justify-between">
             <div>
-              <div class="flex items-start justify-between">
-                <div>
-                  <h3 class="font-bold text-slate-900 text-base">${escapeHtml(h.name)}</h3>
-                  <p class="text-xs text-amber-600 font-semibold mt-0.5">${escapeHtml(h.role || 'જનરલ કારીગર')}</p>
-                </div>
-                <div class="flex items-center gap-1">
-                  <button onclick="openEditHelperModal('${h.id}')" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition" title="એડિટ">
-                    <i class="ph-bold ph-pencil-simple text-base"></i>
-                  </button>
-                  <button onclick="confirmDeleteHelper('${h.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="ડિલીટ">
-                    <i class="ph-bold ph-trash text-base"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div class="mt-4 pt-3 border-t border-slate-100 space-y-2 text-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">દૈનિક રોજ (Daily Roj):</span>
-                  <span class="font-black text-slate-800 text-sm">₹${h.wage} / દિવસ</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">મોબાઈલ:</span>
-                  <span class="font-semibold text-slate-700">${escapeHtml(h.phone || '-')}</span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <span class="text-slate-500">જોડાયા તારીખ:</span>
-                  <span class="text-slate-600">${h.joiningDate || '-'}</span>
-                </div>
-              </div>
+              <label for="note-content" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Details / Remarks *</label>
+              <textarea
+                id="note-content"
+                rows="3"
+                placeholder="Write quantities, supplier details, shift notes, or instructions..."
+                required
+                class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
+              ></textarea>
             </div>
 
-            <!-- Current Month snapshot on card -->
-            <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100 text-xs">
-              <div class="flex items-center justify-between text-slate-600 mb-1">
-                <span>ચાલુ મહિનાના દિવસ:</span>
-                <span class="font-bold text-emerald-700">${monthDays.toFixed(1)} દિવસ</span>
-              </div>
-              <div class="flex items-center justify-between text-slate-600">
-                <span>અંદાજિત બાકી રકમ:</span>
-                <span class="font-bold ${estWage < 0 ? 'text-rose-600' : 'text-slate-900'}">₹${estWage.toLocaleString('en-IN')}</span>
-              </div>
+            <div class="flex justify-end">
+              <button
+                type="submit"
+                id="note-submit-btn"
+                class="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm uppercase tracking-wider shadow-xs transition cursor-pointer"
+              >
+                Save Note
+              </button>
             </div>
-          </div>
-        `;
-      });
+          </form>
+        </div>
 
-      container.innerHTML = html;
-    }
-
-    // ==========================================
-    // MODAL ACTIONS (HELPER, ADVANCE, PAYSLIP)
-    // ==========================================
-
-    function openAddHelperModal() {
-      document.getElementById('helperModalTitle').innerText = 'નવો હેલ્પર ઉમેરો (Add Helper)';
-      document.getElementById('helperFormId').value = '';
-      document.getElementById('helperName').value = '';
-      document.getElementById('helperWage').value = '450';
-      document.getElementById('helperRole').value = '';
-      document.getElementById('helperPhone').value = '';
-      document.getElementById('helperJoining').value = formatDateToISO(new Date());
-      document.getElementById('helperModal').classList.remove('hidden');
-    }
-
-    function openEditHelperModal(helperId) {
-      const helper = state.helpers.find(h => h.id === helperId);
-      if (!helper) return;
-
-      document.getElementById('helperModalTitle').innerText = 'કારીગર વિગત સુધારો (Edit Helper)';
-      document.getElementById('helperFormId').value = helper.id;
-      document.getElementById('helperName').value = helper.name;
-      document.getElementById('helperWage').value = helper.wage;
-      document.getElementById('helperRole').value = helper.role || '';
-      document.getElementById('helperPhone').value = helper.phone || '';
-      document.getElementById('helperJoining').value = helper.joiningDate || '';
-      document.getElementById('helperModal').classList.remove('hidden');
-    }
-
-    function closeHelperModal() {
-      document.getElementById('helperModal').classList.add('hidden');
-    }
-
-    function saveHelper(e) {
-      e.preventDefault();
-      const id = document.getElementById('helperFormId').value;
-      const name = document.getElementById('helperName').value.trim();
-      const wage = parseFloat(document.getElementById('helperWage').value) || 0;
-      const role = document.getElementById('helperRole').value.trim();
-      const phone = document.getElementById('helperPhone').value.trim();
-      const joiningDate = document.getElementById('helperJoining').value;
-
-      if (!name || wage <= 0) {
-        showToast('કૃપા કરી નામ અને યોગ્ય રોજ દાખલ કરો', 'error');
-        return;
-      }
-
-      if (id) {
-        // Edit
-        const idx = state.helpers.findIndex(h => h.id === id);
-        if (idx !== -1) {
-          state.helpers[idx] = { ...state.helpers[idx], name, wage, role, phone, joiningDate };
-          showToast('કારીગર અપડેટ થયો', 'success');
-        }
-      } else {
-        // New
-        const newHelper = {
-          id: 'h_' + Date.now(),
-          name,
-          wage,
-          role,
-          phone,
-          joiningDate
-        };
-        state.helpers.push(newHelper);
-        showToast('નવો કારીગર ઉમેરાયો', 'success');
-      }
-
-      saveToStorage(false);
-      closeHelperModal();
-      renderAll();
-    }
-
-    function confirmDeleteHelper(helperId) {
-      const helper = state.helpers.find(h => h.id === helperId);
-      if (!helper) return;
-
-      // In-app modal confirmation
-      if (window.confirm(`શું તમે ખરેખર "${helper.name}" ને કાઢી નાખવા માંગો છો? આનાથી તેમની હાજરી પણ દૂર થશે.`)) {
-        state.helpers = state.helpers.filter(h => h.id !== helperId);
-        state.advances = state.advances.filter(a => a.helperId !== helperId);
-        saveToStorage(true);
-        renderAll();
-        showToast('કારીગર દૂર કરવામાં આવ્યો', 'info');
-      }
-    }
-
-    // Advance Modal
-    function openAddAdvanceModal() {
-      const select = document.getElementById('advanceHelperSelect');
-      select.innerHTML = state.helpers.map(h => `<option value="${h.id}">${escapeHtml(h.name)} (રોજ ₹${h.wage})</option>`).join('');
-
-      document.getElementById('advanceDate').value = state.selectedDate;
-      document.getElementById('advanceAmount').value = '';
-      document.getElementById('advanceRemark').value = '';
-      document.getElementById('advanceModal').classList.remove('hidden');
-    }
-
-    function closeAdvanceModal() {
-      document.getElementById('advanceModal').classList.add('hidden');
-    }
-
-    function saveAdvance(e) {
-      e.preventDefault();
-      const helperId = document.getElementById('advanceHelperSelect').value;
-      const date = document.getElementById('advanceDate').value;
-      const amount = parseFloat(document.getElementById('advanceAmount').value);
-      const remark = document.getElementById('advanceRemark').value.trim();
-
-      if (!helperId || !date || !amount || amount <= 0) {
-        showToast('કૃપા કરી માન્ય રકમ દાખલ કરો', 'error');
-        return;
-      }
-
-      state.advances.push({
-        id: 'adv_' + Date.now(),
-        helperId,
-        date,
-        amount,
-        remark
-      });
-
-      saveToStorage(true);
-      closeAdvanceModal();
-      renderMonthlyLedger();
-      showToast('ઉપાડની નોંધણી થઈ ગઈ (Advance Added)', 'success');
-    }
-
-    function deleteAdvance(advanceId) {
-      if (window.confirm('આ ઉપાડ એન્ટ્રી રદ કરવી છે?')) {
-        state.advances = state.advances.filter(a => a.id !== advanceId);
-        saveToStorage(true);
-        renderMonthlyLedger();
-        showToast('ઉપાડ એન્ટ્રી રદ કરી', 'info');
-      }
-    }
-
-    // Payslip Modal
-    function openPayslipModal(helperId, days, gross, advance, net, otHours) {
-      const helper = state.helpers.find(h => h.id === helperId);
-      if (!helper) return;
-
-      const [year, month] = state.selectedMonth.split('-');
-      const monthDate = new Date(year, month - 1, 1);
-      const monthName = monthDate.toLocaleDateString('gu-IN', { month: 'long', year: 'numeric' });
-
-      const content = `
-        <div class="border-2 border-slate-800 rounded-xl p-5 bg-white space-y-4">
-          <div class="text-center border-b pb-3 border-slate-300">
-            <h2 class="text-lg font-black tracking-wide uppercase text-slate-900">શ્રી ગણેશ એન્ટરપ્રાઇઝ / કારખાનું</h2>
-            <p class="text-xs text-slate-500 font-medium">માસિક પગાર અને હિસાબ રસીદ (Salary Voucher)</p>
-            <p class="text-xs font-bold text-amber-700 mt-1">${monthName}</p>
+        <!-- Search & Category Filter Bar -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <svg class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+            <input
+              type="text"
+              id="note-search-input"
+              placeholder="Search notes by title or keyword..."
+              class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
+            />
           </div>
 
-          <div class="grid grid-cols-2 text-xs gap-2 py-1">
-            <div><strong>કારીગર:</strong> ${escapeHtml(helper.name)}</div>
-            <div><strong>કામ/વિભાગ:</strong> ${escapeHtml(helper.role || 'જનરલ')}</div>
-            <div><strong>મોબાઇલ:</strong> ${escapeHtml(helper.phone || '-')}</div>
-            <div><strong>દૈનિક રોજ:</strong> ₹${helper.wage}</div>
-          </div>
-
-          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs space-y-2">
-            <div class="flex justify-between">
-              <span>હાજર દિવસો (Effective Days):</span>
-              <span class="font-bold">${days.toFixed(1)} દિવસ</span>
-            </div>
-            ${otHours > 0 ? `
-              <div class="flex justify-between text-amber-800">
-                <span>ઓવરટાઇમ કલાકો (${otHours} કલાક):</span>
-                <span class="font-bold">+ ₹${Math.round(otHours * (helper.wage / 8))}</span>
-              </div>
-            ` : ''}
-            <div class="flex justify-between border-t border-slate-200 pt-1 font-semibold">
-              <span>કુલ બનતી મજૂરી (Gross Wage):</span>
-              <span>₹${gross.toLocaleString('en-IN')}</span>
-            </div>
-            <div class="flex justify-between text-rose-600 font-semibold">
-              <span>કુલ લીધેલ ઉપાડ (Less Advance):</span>
-              <span>- ₹${advance.toLocaleString('en-IN')}</span>
-            </div>
-            <div class="flex justify-between text-sm font-black border-t-2 border-slate-800 pt-2 text-slate-900">
-              <span>ચૂકવવા પાત્ર ચોખ્ખી રકમ (Net Payable):</span>
-              <span class="text-emerald-700">₹${net.toLocaleString('en-IN')}</span>
-            </div>
-          </div>
-
-          <div class="flex justify-between items-end pt-8 text-[11px] text-slate-500">
-            <div>
-              <div class="w-28 border-b border-slate-400 mb-1"></div>
-              <span>કારીગરની સહી / અંગૂઠો</span>
-            </div>
-            <div class="text-right">
-              <div class="w-28 border-b border-slate-400 mb-1 ml-auto"></div>
-              <span>શેઠ / મેનેજર સહી</span>
-            </div>
+          <!-- Category Filter Pills -->
+          <div id="note-category-filters" class="flex flex-wrap gap-1.5">
+            <button type="button" data-cat="All" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-white">All</button>
+            <button type="button" data-cat="Production" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Production</button>
+            <button type="button" data-cat="Material/Stock" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Material/Stock</button>
+            <button type="button" data-cat="Maintenance" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Maintenance</button>
+            <button type="button" data-cat="General" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">General</button>
           </div>
         </div>
-      `;
 
-      document.getElementById('payslipContent').innerHTML = content;
-      document.getElementById('payslipModal').classList.remove('hidden');
-    }
+        <!-- Notes Grid -->
+        <div id="notes-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </section>
+    </main>
 
-    function closePayslipModal() {
-      document.getElementById('payslipModal').classList.add('hidden');
-    }
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-700 z-30 grid grid-cols-3 shadow-2xl" aria-label="Mobile Navigation">
+      <button data-nav="dashboard" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+        </svg>
+        <span>Overview</span>
+      </button>
+      <button data-nav="attendance" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+        </svg>
+        <span>Attendance</span>
+      </button>
+      <button data-nav="notes" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+        </svg>
+        <span>Notes</span>
+      </button>
+    </nav>
+  </div>
 
-    function printElement(elementId) {
-      const content = document.getElementById(elementId).innerHTML;
-      const win = window.open('', '', 'height=600,width=800');
-      win.document.write('<html><head><title>Print Voucher</title>');
-      win.document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
-      win.document.write('</head><body class="p-8">');
-      win.document.write(content);
-      win.document.write('</body></html>');
-      win.document.close();
-      win.focus();
-      setTimeout(() => {
-        win.print();
-        win.close();
-      }, 500);
-    }
+  <!-- ===================================================================== -->
+  <!-- APPLICATION JAVASCRIPT (State, LocalStorage, UI Rendering)            -->
+  <!-- ===================================================================== -->
+  <script>
+    (function () {
+      'use strict';
 
-    // ==========================================
-    // EXPORT FEATURES
-    // ==========================================
+      // -------------------------------------------------------------------
+      // 1. CONSTANTS & LOCALSTORAGE KEYS
+      // -------------------------------------------------------------------
+      const ADMIN_ID = 'admin';
+      const ADMIN_PASS = 'admin@123';
 
-    function exportMonthlyCSV() {
-      const [yearStr, monthStr] = state.selectedMonth.split('-');
-      const year = parseInt(yearStr, 10);
-      const monthIdx = parseInt(monthStr, 10) - 1;
-      const totalDays = getDaysInMonth(year, monthIdx);
+      const STORAGE_KEYS = {
+        AUTH: 'cp_karkhano_auth_v1',
+        WORKERS: 'cp_karkhano_workers_v1',
+        ATTENDANCE: 'cp_karkhano_attendance_v1',
+        NOTES: 'cp_karkhano_notes_v1',
+      };
 
-      let csv = [];
-      // CSV Header
-      let headers = ['Helper Name', 'Role', 'Daily Wage'];
-      for (let d = 1; d <= totalDays; d++) headers.push(`Day ${d}`);
-      headers.push('Effective Days', 'Gross Wage (INR)', 'Advance (INR)', 'Net Payable (INR)');
-      csv.push(headers.map(h => `"${h}"`).join(','));
+      // Helper: Returns today's date in YYYY-MM-DD local timezone
+      function getTodayISO() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
 
-      // CSV Rows
-      state.helpers.forEach(h => {
-        let effectiveDays = 0;
-        let totalOt = 0;
-        let row = [`"${h.name}"`, `"${h.role || ''}"`, h.wage];
+      // Helper: Format YYYY-MM-DD into readable date string
+      function formatReadableDate(isoDate) {
+        if (!isoDate) return '';
+        const parts = isoDate.split('-');
+        if (parts.length !== 3) return isoDate;
+        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return d.toLocaleDateString('en-IN', {
+          weekday: 'short',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        });
+      }
 
-        for (let d = 1; d <= totalDays; d++) {
-          const dateStr = `${yearStr}-${monthStr}-${String(d).padStart(2, '0')}`;
-          const rec = state.attendance[dateStr] ? state.attendance[dateStr][h.id] : null;
-          let val = '-';
-          if (rec) {
-            val = rec.status;
-            if (rec.status === 'P') effectiveDays += 1;
-            if (rec.status === 'H') effectiveDays += 0.5;
-            if (rec.otHours > 0) totalOt += rec.otHours;
+      // Helper: Escape HTML to prevent XSS from user inputs
+      function escapeHTML(str) {
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // -------------------------------------------------------------------
+      // 2. APPLICATION STATE & SEED DATA
+      // -------------------------------------------------------------------
+      let state = {
+        isAuthenticated: false,
+        activeTab: 'dashboard',
+        selectedDate: getTodayISO(),
+        noteFilterCategory: 'All',
+        noteSearchQuery: '',
+        workers: [],
+        // attendance structure: { "YYYY-MM-DD": { "workerId": "P" | "H" | "A" } }
+        attendance: {},
+        notes: [],
+      };
+
+      function loadState() {
+        try {
+          state.isAuthenticated = localStorage.getItem(STORAGE_KEYS.AUTH) === 'true';
+
+          const savedWorkers = localStorage.getItem(STORAGE_KEYS.WORKERS);
+          if (savedWorkers) {
+            state.workers = JSON.parse(savedWorkers);
+          } else {
+            // Seed starter workers on first launch so user sees realistic layout immediately
+            state.workers = [
+              { id: 'w_101', name: 'Rameshbhai Patel', role: 'Karigar', phone: '98250 11223' },
+              { id: 'w_102', name: 'Suresh Kumar', role: 'Machine Operator', phone: '98791 44556' },
+              { id: 'w_103', name: 'Mahesh Solanki', role: 'Welder / Fitter', phone: '99092 77889' },
+              { id: 'w_104', name: 'Dineshbhai Chauhan', role: 'Helper', phone: '₹550/day' },
+            ];
+            localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
           }
-          row.push(`"${val}"`);
+
+          const savedAttendance = localStorage.getItem(STORAGE_KEYS.ATTENDANCE);
+          if (savedAttendance) {
+            state.attendance = JSON.parse(savedAttendance);
+          } else {
+            // Seed sample today attendance
+            const today = getTodayISO();
+            state.attendance[today] = {
+              w_101: 'P',
+              w_102: 'P',
+              w_103: 'H',
+            };
+            localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
+          }
+
+          const savedNotes = localStorage.getItem(STORAGE_KEYS.NOTES);
+          if (savedNotes) {
+            state.notes = JSON.parse(savedNotes);
+          } else {
+            state.notes = [
+              {
+                id: 'n_1',
+                title: 'Batch #42 Cutting & Bending Target',
+                category: 'Production',
+                content: 'Complete 250 units of Century Heavy Hinges before 6:00 PM shift end. Check quality gauge every 50 pieces.',
+                updatedAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              },
+              {
+                id: 'n_2',
+                title: 'Raw Material Order — CRC Coil',
+                category: 'Material/Stock',
+                content: 'Order 2 Ton 16-Gauge CRC Sheet from Ambica Steel Traders for Thursday morning delivery.',
+                updatedAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+              },
+            ];
+            localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
+          }
+        } catch (err) {
+          console.error('Error loading localStorage:', err);
+        }
+      }
+
+      function saveWorkers() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
+        } catch (e) {
+          showToast('Unable to save workers to browser storage.', 'error');
+        }
+      }
+
+      function saveAttendance() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
+        } catch (e) {
+          showToast('Unable to save attendance to browser storage.', 'error');
+        }
+      }
+
+      function saveNotes() {
+        try {
+          localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
+        } catch (e) {
+          showToast('Unable to save notes to browser storage.', 'error');
+        }
+      }
+
+      // -------------------------------------------------------------------
+      // 3. TOAST & CUSTOM CONFIRM MODAL HELPERS
+      // -------------------------------------------------------------------
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+
+        const colors =
+          type === 'error'
+            ? 'bg-red-900 border-red-500 text-white'
+            : type === 'info'
+            ? 'bg-slate-900 border-amber-500 text-white'
+            : 'bg-emerald-900 border-emerald-400 text-white';
+
+        toast.className = `pointer-events-auto border-l-4 ${colors} px-4 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-all duration-300 opacity-0 translate-y-2`;
+        toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
+
+        container.appendChild(toast);
+        requestAnimationFrame(() => {
+          toast.classList.remove('opacity-0', 'translate-y-2');
+        });
+
+        setTimeout(() => {
+          toast.classList.add('opacity-0', 'translate-y-2');
+          setTimeout(() => toast.remove(), 300);
+        }, 2600);
+      }
+
+      function showConfirmModal(title, message, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const okBtn = document.getElementById('confirm-ok-btn');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const cleanup = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          okBtn.onclick = null;
+          cancelBtn.onclick = null;
+        };
+
+        cancelBtn.onclick = cleanup;
+        okBtn.onclick = () => {
+          cleanup();
+          onConfirm();
+        };
+      }
+
+      // -------------------------------------------------------------------
+      // 4. AUTHENTICATION LOGIC
+      // -------------------------------------------------------------------
+      function updateAuthUI() {
+        const loginView = document.getElementById('login-view');
+        const appShell = document.getElementById('app-shell');
+
+        if (state.isAuthenticated) {
+          loginView.classList.add('hidden');
+          appShell.classList.remove('hidden');
+          appShell.classList.add('flex');
+          switchTab(state.activeTab);
+        } else {
+          appShell.classList.add('hidden');
+          appShell.classList.remove('flex');
+          loginView.classList.remove('hidden');
+        }
+      }
+
+      function setupLoginEvents() {
+        const loginForm = document.getElementById('login-form');
+        const loginIdInput = document.getElementById('login-id');
+        const loginPassInput = document.getElementById('login-password');
+        const loginError = document.getElementById('login-error');
+        const loginErrorText = document.getElementById('login-error-text');
+        const quickFillBtn = document.getElementById('quick-fill-btn');
+        const togglePassBtn = document.getElementById('toggle-password-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+
+        quickFillBtn.addEventListener('click', () => {
+          loginIdInput.value = ADMIN_ID;
+          loginPassInput.value = ADMIN_PASS;
+          loginError.classList.add('hidden');
+          showToast('Admin credentials filled', 'info');
+        });
+
+        togglePassBtn.addEventListener('click', () => {
+          const isPass = loginPassInput.type === 'password';
+          loginPassInput.type = isPass ? 'text' : 'password';
+        });
+
+        loginForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const enteredId = loginIdInput.value.trim();
+          const enteredPass = loginPassInput.value;
+
+          if (enteredId === ADMIN_ID && enteredPass === ADMIN_PASS) {
+            loginError.classList.add('hidden');
+            state.isAuthenticated = true;
+            localStorage.setItem(STORAGE_KEYS.AUTH, 'true');
+            loginForm.reset();
+            updateAuthUI();
+            showToast('Welcome to Century Product Karkhano!');
+          } else {
+            loginErrorText.textContent = 'Invalid ID or Password. Use ID: admin and Password: admin@123';
+            loginError.classList.remove('hidden');
+          }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+          state.isAuthenticated = false;
+          localStorage.removeItem(STORAGE_KEYS.AUTH);
+          updateAuthUI();
+          showToast('Logged out safely.', 'info');
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 5. NAVIGATION & VIEW SWITCHING
+      // -------------------------------------------------------------------
+      function switchTab(tabName) {
+        state.activeTab = tabName;
+
+        const pages = {
+          dashboard: document.getElementById('page-dashboard'),
+          attendance: document.getElementById('page-attendance'),
+          notes: document.getElementById('page-notes'),
+        };
+
+        Object.keys(pages).forEach((key) => {
+          if (key === tabName) {
+            pages[key].classList.remove('hidden');
+          } else {
+            pages[key].classList.add('hidden');
+          }
+        });
+
+        // Update Desktop Nav styling
+        document.querySelectorAll('.nav-btn').forEach((btn) => {
+          const isMatch = btn.dataset.nav === tabName;
+          if (isMatch) {
+            btn.className = 'nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer bg-amber-500 text-slate-950 shadow-xs';
+          } else {
+            btn.className = 'nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer text-slate-300 hover:text-white hover:bg-slate-700/60';
+          }
+        });
+
+        // Update Mobile Bottom Nav styling
+        document.querySelectorAll('.mobile-nav-btn').forEach((btn) => {
+          const isMatch = btn.dataset.nav === tabName;
+          if (isMatch) {
+            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer text-amber-400 bg-slate-800/80 border-t-2 border-amber-400';
+          } else {
+            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer text-slate-400 hover:text-white';
+          }
+        });
+
+        // Re-render target view
+        if (tabName === 'dashboard') renderDashboard();
+        if (tabName === 'attendance') renderAttendancePage();
+        if (tabName === 'notes') renderNotesPage();
+      }
+
+      function setupNavigationEvents() {
+        document.querySelectorAll('[data-nav]').forEach((btn) => {
+          btn.addEventListener('click', () => switchTab(btn.dataset.nav));
+        });
+
+        document.querySelectorAll('[data-jump]').forEach((btn) => {
+          btn.addEventListener('click', () => switchTab(btn.dataset.jump));
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 6. DASHBOARD OVERVIEW RENDERING
+      // -------------------------------------------------------------------
+      function renderDashboard() {
+        const today = getTodayISO();
+        document.getElementById('dashboard-today-label').textContent = `Today: ${formatReadableDate(today)}`;
+
+        const totalWorkers = state.workers.length;
+        const todayRecord = state.attendance[today] || {};
+
+        let presentCount = 0;
+        let halfCount = 0;
+        let absentCount = 0;
+
+        state.workers.forEach((w) => {
+          const st = todayRecord[w.id];
+          if (st === 'P') presentCount++;
+          else if (st === 'H') halfCount++;
+          else if (st === 'A') absentCount++;
+        });
+
+        const pct = totalWorkers > 0 ? Math.round(((presentCount + halfCount * 0.5) / totalWorkers) * 100) : 0;
+
+        document.getElementById('stat-total-workers').textContent = totalWorkers;
+        document.getElementById('stat-present-today').textContent = presentCount;
+        document.getElementById('stat-present-pct').textContent = `${pct}% effective workforce today`;
+        document.getElementById('stat-absent-half-today').textContent = halfCount + absentCount;
+        document.getElementById('stat-absent-half-detail').textContent = `${halfCount} Half-Day • ${absentCount} Absent`;
+        document.getElementById('stat-total-notes').textContent = state.notes.length;
+
+        // Render Today's Worker Preview
+        const workerPreviewEl = document.getElementById('dashboard-worker-preview');
+        if (state.workers.length === 0) {
+          workerPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">No workers added yet. Go to Worker Attendance to add staff.</p>`;
+        } else {
+          workerPreviewEl.innerHTML = state.workers
+            .slice(0, 6)
+            .map((w) => {
+              const status = todayRecord[w.id];
+              let badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500">Not Marked</span>`;
+              if (status === 'P') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">Present</span>`;
+              if (status === 'H') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800">Half-Day</span>`;
+              if (status === 'A') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-800">Absent</span>`;
+
+              return `
+                <div class="py-2.5 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-bold text-slate-900">${escapeHTML(w.name)}</p>
+                    <p class="text-xs text-slate-500">${escapeHTML(w.role)}</p>
+                  </div>
+                  ${badge}
+                </div>
+              `;
+            })
+            .join('');
         }
 
-        const hourly = h.wage / 8;
-        const gross = Math.round((effectiveDays * h.wage) + (totalOt * hourly));
-        const adv = state.advances
-          .filter(a => a.helperId === h.id && a.date.startsWith(state.selectedMonth))
-          .reduce((sum, a) => sum + Number(a.amount || 0), 0);
-        const net = gross - adv;
+        // Render Recent Notes Preview
+        const notesPreviewEl = document.getElementById('dashboard-notes-preview');
+        if (state.notes.length === 0) {
+          notesPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">No notes recorded yet.</p>`;
+        } else {
+          notesPreviewEl.innerHTML = state.notes
+            .slice(0, 3)
+            .map(
+              (n) => `
+              <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">${escapeHTML(n.category)}</span>
+                  <span class="text-[11px] text-slate-400">${escapeHTML(n.updatedAt)}</span>
+                </div>
+                <h4 class="text-sm font-bold text-slate-900 truncate">${escapeHTML(n.title)}</h4>
+                <p class="text-xs text-slate-600 line-clamp-2 mt-0.5">${escapeHTML(n.content)}</p>
+              </div>
+            `
+            )
+            .join('');
+        }
+      }
 
-        row.push(effectiveDays.toFixed(1), gross, adv, net);
-        csv.push(row.join(','));
+      // -------------------------------------------------------------------
+      // 7. WORKER ATTENDANCE PAGE LOGIC
+      // -------------------------------------------------------------------
+      function renderAttendancePage() {
+        const dateInput = document.getElementById('attendance-date');
+        dateInput.value = state.selectedDate;
+
+        const isToday = state.selectedDate === getTodayISO();
+        document.getElementById('selected-date-display').textContent = isToday
+          ? `Today (${formatReadableDate(state.selectedDate)})`
+          : formatReadableDate(state.selectedDate);
+
+        const dayRecord = state.attendance[state.selectedDate] || {};
+
+        let present = 0;
+        let half = 0;
+        let absent = 0;
+
+        state.workers.forEach((w) => {
+          const st = dayRecord[w.id];
+          if (st === 'P') present++;
+          else if (st === 'H') half++;
+          else if (st === 'A') absent++;
+        });
+
+        document.getElementById('att-count-total').textContent = state.workers.length;
+        document.getElementById('att-count-present').textContent = present;
+        document.getElementById('att-count-half').textContent = half;
+        document.getElementById('att-count-absent').textContent = absent;
+
+        const container = document.getElementById('worker-list-container');
+        if (state.workers.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-10 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+              <p class="text-base font-bold text-slate-700">No Workers Registered Yet</p>
+              <p class="text-xs text-slate-500 mt-1">Use the "Add New Worker to Karkhano" form above to add your karigars and helpers.</p>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = state.workers
+          .map((worker, index) => {
+            const status = dayRecord[worker.id] || '';
+            const rowBorder =
+              status === 'P'
+                ? 'border-emerald-300 bg-emerald-50/30'
+                : status === 'H'
+                ? 'border-amber-300 bg-amber-50/30'
+                : status === 'A'
+                ? 'border-red-300 bg-red-50/30'
+                : 'border-slate-200 bg-white';
+
+            const btnP =
+              status === 'P'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/30'
+                : 'bg-white hover:bg-emerald-50 text-emerald-700 border-slate-300';
+
+            const btnH =
+              status === 'H'
+                ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm ring-2 ring-amber-500/30'
+                : 'bg-white hover:bg-amber-50 text-amber-700 border-slate-300';
+
+            const btnA =
+              status === 'A'
+                ? 'bg-red-600 text-white border-red-600 shadow-sm ring-2 ring-red-500/30'
+                : 'bg-white hover:bg-red-50 text-red-700 border-slate-300';
+
+            return `
+              <div class="border ${rowBorder} rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
+                <!-- Worker Info -->
+                <div class="flex items-start gap-3">
+                  <div class="w-9 h-9 rounded-lg bg-slate-900 text-amber-400 font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                    #${index + 1}
+                  </div>
+                  <div>
+                    <h4 class="text-base font-extrabold text-slate-900 leading-snug">${escapeHTML(worker.name)}</h4>
+                    <div class="flex flex-wrap items-center gap-2 mt-1">
+                      <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-xs font-bold">${escapeHTML(worker.role)}</span>
+                      ${worker.phone ? `<span class="text-xs text-slate-500 font-medium">${escapeHTML(worker.phone)}</span>` : ''}
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Status Buttons + Delete -->
+                <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/80">
+                  <div class="grid grid-cols-3 gap-1.5 flex-1 sm:flex-initial">
+                    <button
+                      type="button"
+                      data-worker-id="${worker.id}"
+                      data-status="P"
+                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnP}"
+                      title="Present"
+                    >
+                      P <span class="hidden md:inline font-semibold">Present</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-worker-id="${worker.id}"
+                      data-status="H"
+                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnH}"
+                      title="Half-Day"
+                    >
+                      H <span class="hidden md:inline font-semibold">Half</span>
+                    </button>
+                    <button
+                      type="button"
+                      data-worker-id="${worker.id}"
+                      data-status="A"
+                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnA}"
+                      title="Absent"
+                    >
+                      A <span class="hidden md:inline font-semibold">Absent</span>
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-delete-worker="${worker.id}"
+                    aria-label="Remove worker ${escapeHTML(worker.name)}"
+                    class="p-2.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer ml-1"
+                    title="Delete Worker"
+                  >
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      function setupAttendanceEvents() {
+        const dateInput = document.getElementById('attendance-date');
+        const todayBtn = document.getElementById('today-date-btn');
+        const addWorkerForm = document.getElementById('add-worker-form');
+        const workerListContainer = document.getElementById('worker-list-container');
+        const markAllPresentBtn = document.getElementById('mark-all-present-btn');
+        const copyReportBtn = document.getElementById('copy-report-btn');
+
+        dateInput.addEventListener('change', (e) => {
+          if (e.target.value) {
+            state.selectedDate = e.target.value;
+            renderAttendancePage();
+          }
+        });
+
+        todayBtn.addEventListener('click', () => {
+          state.selectedDate = getTodayISO();
+          renderAttendancePage();
+          showToast('Switched to today\'s date', 'info');
+        });
+
+        addWorkerForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const nameInput = document.getElementById('worker-name');
+          const roleInput = document.getElementById('worker-role');
+          const phoneInput = document.getElementById('worker-phone');
+
+          const name = nameInput.value.trim();
+          const role = roleInput.value;
+          const phone = phoneInput.value.trim();
+
+          if (!name) {
+            showToast('Please enter a worker name.', 'error');
+            return;
+          }
+
+          const newWorker = {
+            id: 'w_' + Date.now(),
+            name,
+            role,
+            phone,
+          };
+
+          state.workers.push(newWorker);
+          saveWorkers();
+          addWorkerForm.reset();
+          renderAttendancePage();
+          showToast(`Added ${name} to worker list!`);
+        });
+
+        // Event delegation for P/H/A status buttons and Delete Worker
+        workerListContainer.addEventListener('click', (e) => {
+          const statusBtn = e.target.closest('.att-status-btn');
+          if (statusBtn) {
+            const workerId = statusBtn.dataset.workerId;
+            const status = statusBtn.dataset.status;
+
+            if (!state.attendance[state.selectedDate]) {
+              state.attendance[state.selectedDate] = {};
+            }
+            state.attendance[state.selectedDate][workerId] = status;
+            saveAttendance();
+            renderAttendancePage();
+            return;
+          }
+
+          const deleteBtn = e.target.closest('[data-delete-worker]');
+          if (deleteBtn) {
+            const workerId = deleteBtn.dataset.deleteWorker;
+            const worker = state.workers.find((w) => w.id === workerId);
+            if (!worker) return;
+
+            showConfirmModal(
+              'Remove Worker?',
+              `Are you sure you want to remove "${worker.name}" from Century Product?`,
+              () => {
+                state.workers = state.workers.filter((w) => w.id !== workerId);
+                saveWorkers();
+                renderAttendancePage();
+                showToast(`Removed ${worker.name}`, 'info');
+              }
+            );
+          }
+        });
+
+        markAllPresentBtn.addEventListener('click', () => {
+          if (state.workers.length === 0) {
+            showToast('No workers to mark.', 'error');
+            return;
+          }
+          if (!state.attendance[state.selectedDate]) {
+            state.attendance[state.selectedDate] = {};
+          }
+          state.workers.forEach((w) => {
+            state.attendance[state.selectedDate][w.id] = 'P';
+          });
+          saveAttendance();
+          renderAttendancePage();
+          showToast('All workers marked Present!');
+        });
+
+        // Copy WhatsApp-friendly Daily Attendance Report
+        copyReportBtn.addEventListener('click', () => {
+          if (state.workers.length === 0) {
+            showToast('No workers available for report.', 'error');
+            return;
+          }
+
+          const dayRecord = state.attendance[state.selectedDate] || {};
+          let present = 0;
+          let half = 0;
+          let absent = 0;
+
+          const lines = state.workers.map((w, idx) => {
+            const st = dayRecord[w.id];
+            let label = 'Unmarked';
+            if (st === 'P') {
+              present++;
+              label = '✅ Present';
+            } else if (st === 'H') {
+              half++;
+              label = '🌓 Half-Day';
+            } else if (st === 'A') {
+              absent++;
+              label = '❌ Absent';
+            }
+            return `${idx + 1}. ${w.name} (${w.role}) — ${label}`;
+          });
+
+          const reportText = [
+            `*CENTURY PRODUCT — KARKHANO ATTENDANCE*`,
+            `Date: ${formatReadableDate(state.selectedDate)}`,
+            `Summary: Present: ${present} | Half-Day: ${half} | Absent: ${absent} | Total: ${state.workers.length}`,
+            `----------------------------------`,
+            ...lines,
+          ].join('\n');
+
+          // Use textarea + execCommand('copy') for reliable iFrame/mobile support
+          const tempArea = document.createElement('textarea');
+          tempArea.value = reportText;
+          tempArea.style.position = 'fixed';
+          tempArea.style.left = '-9999px';
+          document.body.appendChild(tempArea);
+          tempArea.select();
+
+          try {
+            document.execCommand('copy');
+            showToast('Attendance report copied! Ready to paste in WhatsApp.');
+          } catch (err) {
+            showToast('Failed to copy report.', 'error');
+          } finally {
+            document.body.removeChild(tempArea);
+          }
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 8. NOTES PAGE LOGIC
+      // -------------------------------------------------------------------
+      function getCategoryBadgeClasses(category) {
+        switch (category) {
+          case 'Production':
+            return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          case 'Material/Stock':
+            return 'bg-amber-100 text-amber-900 border-amber-200';
+          case 'Maintenance':
+            return 'bg-red-100 text-red-800 border-red-200';
+          default:
+            return 'bg-slate-200 text-slate-800 border-slate-300';
+        }
+      }
+
+      function renderNotesPage() {
+        const grid = document.getElementById('notes-grid');
+        const query = state.noteSearchQuery.toLowerCase();
+
+        // Update filter pill styles
+        document.querySelectorAll('.cat-filter-btn').forEach((btn) => {
+          if (btn.dataset.cat === state.noteFilterCategory) {
+            btn.className = 'cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-amber-400';
+          } else {
+            btn.className = 'cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200';
+          }
+        });
+
+        const filteredNotes = state.notes.filter((note) => {
+          const matchesCat = state.noteFilterCategory === 'All' || note.category === state.noteFilterCategory;
+          const matchesQuery =
+            !query ||
+            note.title.toLowerCase().includes(query) ||
+            note.content.toLowerCase().includes(query) ||
+            note.category.toLowerCase().includes(query);
+          return matchesCat && matchesQuery;
+        });
+
+        if (filteredNotes.length === 0) {
+          grid.innerHTML = `
+            <div class="md:col-span-2 text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
+              <p class="text-base font-bold text-slate-700">No Matching Notes Found</p>
+              <p class="text-xs text-slate-500 mt-1">Add a new note above or clear your search/category filter.</p>
+            </div>
+          `;
+          return;
+        }
+
+        grid.innerHTML = filteredNotes
+          .map((note) => {
+            const badgeClass = getCategoryBadgeClasses(note.category);
+            return `
+              <article class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs flex flex-col justify-between gap-4 hover:border-slate-300 transition">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2.5">
+                    <span class="px-2.5 py-1 rounded-lg border text-xs font-extrabold ${badgeClass}">
+                      ${escapeHTML(note.category)}
+                    </span>
+                    <span class="text-xs text-slate-400 font-medium">${escapeHTML(note.updatedAt)}</span>
+                  </div>
+                  <h3 class="text-base font-extrabold text-slate-900 mb-1.5">${escapeHTML(note.title)}</h3>
+                  <p class="text-sm text-slate-600 whitespace-pre-line leading-relaxed">${escapeHTML(note.content)}</p>
+                </div>
+
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    data-edit-note="${note.id}"
+                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 text-xs font-bold transition cursor-pointer"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    data-delete-note="${note.id}"
+                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold transition cursor-pointer"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join('');
+      }
+
+      function resetNoteForm() {
+        document.getElementById('note-form').reset();
+        document.getElementById('note-edit-id').value = '';
+        document.getElementById('note-form-heading').textContent = 'Create Karkhano Note';
+        document.getElementById('note-submit-btn').textContent = 'Save Note';
+        document.getElementById('cancel-edit-note-btn').classList.add('hidden');
+      }
+
+      function setupNotesEvents() {
+        const noteForm = document.getElementById('note-form');
+        const cancelEditBtn = document.getElementById('cancel-edit-note-btn');
+        const searchInput = document.getElementById('note-search-input');
+        const categoryFilters = document.getElementById('note-category-filters');
+        const notesGrid = document.getElementById('notes-grid');
+
+        noteForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const editId = document.getElementById('note-edit-id').value;
+          const title = document.getElementById('note-title').value.trim();
+          const category = document.getElementById('note-category').value;
+          const content = document.getElementById('note-content').value.trim();
+
+          if (!title || !content) {
+            showToast('Please enter both note title and details.', 'error');
+            return;
+          }
+
+          const timestamp = new Date().toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          });
+
+          if (editId) {
+            const idx = state.notes.findIndex((n) => n.id === editId);
+            if (idx !== -1) {
+              state.notes[idx] = {
+                ...state.notes[idx],
+                title,
+                category,
+                content,
+                updatedAt: timestamp,
+              };
+              showToast('Note updated!');
+            }
+          } else {
+            state.notes.unshift({
+              id: 'n_' + Date.now(),
+              title,
+              category,
+              content,
+              updatedAt: timestamp,
+            });
+            showToast('New note saved!');
+          }
+
+          saveNotes();
+          resetNoteForm();
+          renderNotesPage();
+        });
+
+        cancelEditBtn.addEventListener('click', () => {
+          resetNoteForm();
+        });
+
+        searchInput.addEventListener('input', (e) => {
+          state.noteSearchQuery = e.target.value;
+          renderNotesPage();
+        });
+
+        categoryFilters.addEventListener('click', (e) => {
+          const btn = e.target.closest('.cat-filter-btn');
+          if (!btn) return;
+          state.noteFilterCategory = btn.dataset.cat;
+          renderNotesPage();
+        });
+
+        notesGrid.addEventListener('click', (e) => {
+          const editBtn = e.target.closest('[data-edit-note]');
+          if (editBtn) {
+            const noteId = editBtn.dataset.editNote;
+            const note = state.notes.find((n) => n.id === noteId);
+            if (!note) return;
+
+            document.getElementById('note-edit-id').value = note.id;
+            document.getElementById('note-title').value = note.title;
+            document.getElementById('note-category').value = note.category;
+            document.getElementById('note-content').value = note.content;
+            document.getElementById('note-form-heading').textContent = 'Edit Karkhano Note';
+            document.getElementById('note-submit-btn').textContent = 'Update Note';
+            document.getElementById('cancel-edit-note-btn').classList.remove('hidden');
+
+            document.getElementById('note-title').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+
+          const deleteBtn = e.target.closest('[data-delete-note]');
+          if (deleteBtn) {
+            const noteId = deleteBtn.dataset.deleteNote;
+            const note = state.notes.find((n) => n.id === noteId);
+            if (!note) return;
+
+            showConfirmModal(
+              'Delete Note?',
+              `Delete "${note.title}" permanently?`,
+              () => {
+                state.notes = state.notes.filter((n) => n.id !== noteId);
+                saveNotes();
+                if (document.getElementById('note-edit-id').value === noteId) {
+                  resetNoteForm();
+                }
+                renderNotesPage();
+                showToast('Note deleted.', 'info');
+              }
+            );
+          }
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 9. INITIALIZE APPLICATION ON DOM READY
+      // -------------------------------------------------------------------
+      window.addEventListener('DOMContentLoaded', () => {
+        loadState();
+        setupLoginEvents();
+        setupNavigationEvents();
+        setupAttendanceEvents();
+        setupNotesEvents();
+        updateAuthUI();
       });
-
-      const blob = new Blob(["\uFEFF" + csv.join("\n")], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `karkhana_hajri_${state.selectedMonth}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      showToast('CSV ડાઉનલોડ શરૂ થઈ ગઈ', 'success');
-    }
-
-    function exportDataBackup() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
-        helpers: state.helpers,
-        attendance: state.attendance,
-        advances: state.advances,
-        exportDate: new Date().toISOString()
-      }, null, 2));
-      const downloadAnchor = document.createElement('a');
-      downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `karkhana_backup_${formatDateToISO(new Date())}.json`);
-      document.body.appendChild(downloadAnchor);
-      downloadAnchor.click();
-      downloadAnchor.remove();
-      showToast('સંપૂર્ણ બેકઅપ ડાઉનલોડ થઈ ગયું', 'success');
-    }
-
-    // Toast alerts
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toastContainer');
-      const toast = document.createElement('div');
-      
-      let bg = 'bg-slate-900 text-white';
-      if (type === 'success') bg = 'bg-emerald-600 text-white';
-      if (type === 'error') bg = 'bg-rose-600 text-white';
-
-      toast.className = `${bg} px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 pointer-events-auto transform transition duration-200 translate-y-2 opacity-0`;
-      toast.innerHTML = `<i class="ph-bold ${type === 'success' ? 'ph-check-circle' : 'ph-info'} text-base"></i><span>${escapeHtml(message)}</span>`;
-      
-      container.appendChild(toast);
-      
-      setTimeout(() => {
-        toast.classList.remove('translate-y-2', 'opacity-0');
-      }, 20);
-
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'translate-y-2');
-        setTimeout(() => toast.remove(), 250);
-      }, 2800);
-    }
-
-    function escapeHtml(string) {
-      if (!string) return '';
-      return String(string)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-    }
-
-    // Initialize application when DOM ready
-    window.onload = function() {
-      init();
-    };
+    })();
   </script>
 </body>
 </html>
