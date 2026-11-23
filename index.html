@@ -779,7 +779,7 @@
               </span>
               <h3 class="text-lg font-extrabold text-white">એકસાથે ઘણા લોકો આ એપ વાપરી શકે તે માટે શેર લિંક</h3>
               <p class="text-xs sm:text-sm text-slate-300 mt-1">
-                આ એપ લાઇવ ક્લાઉડ ડેટાબેઝ સાથે જોડાયેલી છે. જ્યારે માલિક, મેનેજર કે સુપરવાઇઝર અલગ-અલગ ફોનમાંથી લોગિન કરશે, ત્યારે બધાને એક જ લાઇવ હાજરી, કારીગરો અને નોંધ દેખાશે.
+                આ એપ લાઇવ ક્લાઉડ ડેટાબેઝ સાથે જોડાયેલી છે. એકવાર લોગિન કર્યા પછી એપ ફરી ખોલતા સીધી ઓટોમેટિક ખુલશે. નીચેના બટનથી બીજા ફોનમાં સીધી ઓટો-લોગિન લિંક પણ મોકલી શકો છો.
               </p>
             </div>
             <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -789,6 +789,13 @@
                 class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs transition cursor-pointer"
               >
                 📋 એપ લિંક કોપી કરો (બધાને મોકલો)
+              </button>
+              <button
+                type="button"
+                id="copy-autologin-link-btn"
+                class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold shadow-xs transition cursor-pointer"
+              >
+                🔑 ઓટો-લોગિન લિંક કોપી કરો
               </button>
             </div>
           </div>
@@ -1159,125 +1166,276 @@
       // -------------------------------------------------------------------
       const ADMIN_ID = 'admin';
       const ADMIN_PASS = 'admin@123';
+      const SESSION_STORAGE_KEY = 'century_karkhano_saved_login_v1';
 
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'century-product-karkhano-live';
       const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
+      const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
       let db = null;
       let auth = null;
       let cloudUser = null;
       let cloudReady = false;
+      let hasSeededDefaults = false;
 
-      // Helper: Returns today's date in YYYY-MM-DD local timezone
+      // -------------------------------------------------------------------
+      // 2. DATE, CURRENCY, TOAST & MODAL HELPER FUNCTIONS
+      // -------------------------------------------------------------------
+      const GUJARATI_MONTHS = [
+        'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
+        'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર',
+      ];
+      const GUJARATI_WEEKDAYS = [
+        'રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર',
+      ];
+
       function getTodayISO() {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
       }
 
-      // Helper: Returns current month in YYYY-MM local timezone
       function getCurrentMonthISO() {
         return getTodayISO().slice(0, 7);
       }
 
-      // Helper: Format YYYY-MM into Gujarati Month + Year label
-      function formatGujaratiMonthYear(monthISO) {
-        if (!monthISO || !monthISO.includes('-')) return monthISO;
-        const [yStr, mStr] = monthISO.split('-');
-        const guMonths = [
-          'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
-          'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર'
-        ];
-        const mIdx = Math.max(0, Math.min(11, Number(mStr) - 1));
-        return `${guMonths[mIdx]} ${yStr}`;
-      }
-
-      // Helper: Get Gujarati weekday name for a Date object
       function getGujaratiWeekday(dateObj) {
-        const days = ['રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર'];
-        return days[dateObj.getDay()] || '';
+        return GUJARATI_WEEKDAYS[dateObj.getDay()] || '';
       }
 
-      // Helper: Format YYYY-MM-DD into Gujarati date string
-      function formatGujaratiDate(isoDate) {
-        if (!isoDate) return '';
-        const parts = isoDate.split('-');
-        if (parts.length !== 3) return isoDate;
-        const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        try {
-          return d.toLocaleDateString('gu-IN', {
-            weekday: 'short',
-            day: '2-digit',
-            month: 'short',
-            year: 'numeric',
-          });
-        } catch (e) {
-          return isoDate;
-        }
+      function formatGujaratiDate(dateISO) {
+        if (!dateISO || !dateISO.includes('-')) return dateISO || '';
+        const [y, m, d] = dateISO.split('-').map(Number);
+        const dt = new Date(y, m - 1, d);
+        const monthName = GUJARATI_MONTHS[m - 1] || '';
+        const weekday = getGujaratiWeekday(dt);
+        return `${d} ${monthName} ${y} (${weekday})`;
       }
 
-      // Helper: Get current Gujarati timestamp
+      function formatGujaratiMonthYear(monthISO) {
+        if (!monthISO || !monthISO.includes('-')) return monthISO || '';
+        const [y, m] = monthISO.split('-').map(Number);
+        return `${GUJARATI_MONTHS[m - 1] || ''} ${y}`;
+      }
+
       function getGujaratiTimestamp() {
-        try {
-          return new Date().toLocaleString('gu-IN', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
-        } catch (e) {
-          return new Date().toLocaleString();
-        }
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, '0');
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const y = now.getFullYear();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        return `${d}/${m}/${y} ${hh}:${mm}`;
       }
 
-      // Helper: Format currency cleanly in ₹
-      function formatRupees(amount) {
-        const num = Math.round((Number(amount) || 0) * 100) / 100;
+      function formatRupees(val) {
+        const num = Math.round(Number(val) || 0);
         return '₹' + num.toLocaleString('en-IN');
       }
 
-      // Helper: Escape HTML to prevent XSS
       function escapeHTML(str) {
-        return String(str)
+        return String(str || '')
           .replace(/&/g, '&amp;')
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
+          .replace(/'/g, '&#39;');
+      }
+
+      function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        const colors =
+          type === 'error'
+            ? 'bg-red-600 text-white border-red-400'
+            : type === 'info'
+            ? 'bg-slate-900 text-amber-300 border-amber-500/50'
+            : 'bg-emerald-600 text-white border-emerald-400';
+
+        toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-bold transition-all duration-300 ${colors}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => {
+          toast.style.opacity = '0';
+          setTimeout(() => toast.remove(), 300);
+        }, 3200);
+      }
+
+      function showConfirmModal(title, message, onConfirm) {
+        const modal = document.getElementById('confirm-modal');
+        const titleEl = document.getElementById('confirm-title');
+        const msgEl = document.getElementById('confirm-message');
+        const cancelBtn = document.getElementById('confirm-cancel-btn');
+        const okBtn = document.getElementById('confirm-ok-btn');
+
+        titleEl.textContent = title;
+        msgEl.textContent = message;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const cleanup = () => {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          cancelBtn.onclick = null;
+          okBtn.onclick = null;
+        };
+
+        cancelBtn.onclick = cleanup;
+        okBtn.onclick = async () => {
+          cleanup();
+          if (typeof onConfirm === 'function') {
+            await onConfirm();
+          }
+        };
       }
 
       // -------------------------------------------------------------------
-      // 2. SHARED MULTI-USER IN-MEMORY STATE + CLOUD REAL-TIME LISTENERS
+      // 3. CENTRAL APPLICATION STATE & REAL-TIME CLOUD / LOCAL STORAGE SYNC
       // -------------------------------------------------------------------
-      let state = {
+      const LOCAL_CACHE_KEY = 'century_karkhano_offline_cache_v2';
+
+      const state = {
         isAuthenticated: false,
-        currentUser: 'admin',
+        currentUser: ADMIN_ID,
         activeTab: 'dashboard',
         selectedDate: getTodayISO(),
         selectedMonth: getCurrentMonthISO(),
-        noteFilterCategory: 'All',
+        lastSavedAt: getGujaratiTimestamp(),
         noteSearchQuery: '',
+        noteFilterCategory: 'All',
         workers: [],
         attendance: {},
         notes: [],
         logs: [],
-        lastSavedAt: getGujaratiTimestamp(),
       };
 
-      function updateCloudBadgeUI(isConnected, labelText) {
-        const dot = document.getElementById('cloud-sync-dot');
-        const label = document.getElementById('cloud-sync-label');
-        const recStatus = document.getElementById('records-cloud-status');
-        const recUid = document.getElementById('records-device-uid');
-
-        if (dot) {
-          dot.className = isConnected
-            ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse'
-            : 'w-2 h-2 rounded-full bg-amber-400';
+      function persistLocalCache() {
+        try {
+          window.localStorage.setItem(
+            LOCAL_CACHE_KEY,
+            JSON.stringify({
+              workers: state.workers,
+              attendance: state.attendance,
+              notes: state.notes,
+              logs: state.logs,
+              lastSavedAt: state.lastSavedAt,
+            })
+          );
+        } catch (err) {
+          console.warn('Local cache write skipped:', err);
         }
-        if (label) label.textContent = labelText;
-        if (recStatus) recStatus.textContent = labelText;
-        if (recUid && cloudUser) recUid.textContent = cloudUser.uid;
+      }
+
+      function loadLocalCache() {
+        try {
+          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed.workers)) state.workers = parsed.workers;
+          if (parsed.attendance && typeof parsed.attendance === 'object') state.attendance = parsed.attendance;
+          if (Array.isArray(parsed.notes)) state.notes = parsed.notes;
+          if (Array.isArray(parsed.logs)) state.logs = parsed.logs;
+          if (parsed.lastSavedAt) state.lastSavedAt = parsed.lastSavedAt;
+          return true;
+        } catch (err) {
+          console.warn('Local cache read skipped:', err);
+          return false;
+        }
+      }
+
+      function seedStarterDataIfEmpty() {
+        if (hasSeededDefaults || state.workers.length > 0 || state.notes.length > 0) return;
+        hasSeededDefaults = true;
+        const today = getTodayISO();
+        state.workers = [
+          {
+            id: 'w_demo_1',
+            name: 'રમેશભાઈ પટેલ',
+            role: 'મશીન ઓપરેટર',
+            dailyRate: 800,
+            otRate: 100,
+            phone: '98250 11223',
+            savedBy: 'admin',
+            createdAtMs: Date.now() - 3000,
+          },
+          {
+            id: 'w_demo_2',
+            name: 'સુરેશભાઈ પ્રજાપતિ',
+            role: 'કારીગર',
+            dailyRate: 700,
+            otRate: 90,
+            phone: '98790 44556',
+            savedBy: 'admin',
+            createdAtMs: Date.now() - 2000,
+          },
+          {
+            id: 'w_demo_3',
+            name: 'મહેશભાઈ ઠાકોર',
+            role: 'હેલ્પર',
+            dailyRate: 550,
+            otRate: 70,
+            phone: '97240 77889',
+            savedBy: 'admin',
+            createdAtMs: Date.now() - 1000,
+          },
+        ];
+        state.attendance[today] = {
+          w_demo_1: { status: 'P', otHours: 2, savedBy: 'admin' },
+          w_demo_2: { status: 'P', otHours: 1, savedBy: 'admin' },
+          w_demo_3: { status: 'P', otHours: 0, savedBy: 'admin' },
+        };
+        state.notes = [
+          {
+            id: 'n_demo_1',
+            title: 'કાચો માલ અને પેકિંગ બોક્સ',
+            category: 'માલ / સ્ટોક',
+            content: 'કાલે સવારે 200 કિલો રો-મટીરીયલ અને 50 પેકિંગ બોક્સ મંગાવવાના છે.',
+            updatedAt: getGujaratiTimestamp(),
+            savedBy: 'admin',
+            createdAtMs: Date.now(),
+          },
+        ];
+        persistLocalCache();
+      }
+
+      function getSharedCollection(colName) {
+        return collection(db, 'artifacts', appId, 'public', 'data', colName);
+      }
+
+      function getSharedDoc(colName, docId) {
+        return doc(db, 'artifacts', appId, 'public', 'data', colName, docId);
+      }
+
+      function getWorkerDayRecord(dateISO, workerId) {
+        const dayMap = state.attendance[dateISO] || {};
+        const entry = dayMap[workerId];
+        if (!entry) return { status: '', otHours: 0, savedBy: '' };
+        if (typeof entry === 'string') return { status: entry, otHours: 0, savedBy: '' };
+        return {
+          status: entry.status || '',
+          otHours: Number(entry.otHours) || 0,
+          savedBy: entry.savedBy || '',
+        };
+      }
+
+      function calculateWorkerEarnings(worker, rec) {
+        const dailyRate = Number(worker.dailyRate) || 0;
+        const otRate = Number(worker.otRate) || 0;
+        let shiftPay = 0;
+        if (rec.status === 'P') shiftPay = dailyRate;
+        else if (rec.status === 'H') shiftPay = Math.round(dailyRate * 0.5);
+
+        const otPay = Math.round((Number(rec.otHours) || 0) * otRate);
+        return {
+          shiftPay,
+          otPay,
+          totalPay: shiftPay + otPay,
+        };
       }
 
       function refreshActiveView() {
@@ -1289,363 +1447,303 @@
         if (state.activeTab === 'records') renderRecordsPage();
       }
 
-      // Firestore Public Shared Collection Helpers (Rule 1: /artifacts/{appId}/public/data/{collectionName})
-      function getSharedCol(collectionName) {
-        return collection(db, 'artifacts', appId, 'public', 'data', collectionName);
-      }
-
-      function getSharedDoc(collectionName, docId) {
-        return doc(db, 'artifacts', appId, 'public', 'data', collectionName, docId);
-      }
-
-      async function recordAuditLog(actionType, detailText) {
-        const logId = 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
-        const entry = {
-          id: logId,
+      async function recordAuditLog(action, detail) {
+        const logEntry = {
+          id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          action,
+          detail,
           user: state.currentUser || ADMIN_ID,
-          action: actionType,
-          detail: detailText,
           timestamp: getGujaratiTimestamp(),
           createdAtMs: Date.now(),
         };
-        state.logs.unshift(entry);
-        if (state.logs.length > 150) {
-          state.logs = state.logs.slice(0, 150);
-        }
-        state.lastSavedAt = entry.timestamp;
+        state.logs.unshift(logEntry);
+        if (state.logs.length > 200) state.logs.length = 200;
+        state.lastSavedAt = logEntry.timestamp;
+        persistLocalCache();
 
-        if (!cloudReady || !cloudUser) return;
-        try {
-          await setDoc(getSharedDoc('karkhano_logs', logId), entry);
-        } catch (err) {
-          console.error('Audit log cloud write error:', err);
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_logs', logEntry.id), logEntry);
+          } catch (err) {
+            console.warn('Cloud log sync failed:', err);
+          }
+        }
+      }
+
+      async function saveSingleWorkerToCloud(workerObj, logMessage) {
+        const idx = state.workers.findIndex((w) => w.id === workerObj.id);
+        if (idx >= 0) state.workers[idx] = workerObj;
+        else state.workers.push(workerObj);
+
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_workers', workerObj.id), workerObj);
+          } catch (err) {
+            console.warn('Cloud worker save failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('કારીગર સેવ', logMessage);
+      }
+
+      async function deleteWorkerFromCloud(workerId, logMessage) {
+        state.workers = state.workers.filter((w) => w.id !== workerId);
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_workers', workerId));
+          } catch (err) {
+            console.warn('Cloud worker delete failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('કારીગર ડિલીટ', logMessage);
+      }
+
+      async function saveDateAttendanceToCloud(dateISO, logMessage) {
+        const recordsForDate = state.attendance[dateISO] || {};
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_attendance', dateISO), {
+              dateISO,
+              records: recordsForDate,
+              updatedAt: state.lastSavedAt,
+              updatedBy: state.currentUser || ADMIN_ID,
+            });
+          } catch (err) {
+            console.warn('Cloud attendance save failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('હાજરી સેવ', logMessage);
+      }
+
+      async function deleteDateAttendanceFromCloud(dateISO, logMessage) {
+        delete state.attendance[dateISO];
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_attendance', dateISO));
+          } catch (err) {
+            console.warn('Cloud attendance delete failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('હાજરી ડિલીટ', logMessage);
+      }
+
+      async function saveSingleNoteToCloud(noteObj, logMessage) {
+        const idx = state.notes.findIndex((n) => n.id === noteObj.id);
+        if (idx >= 0) state.notes[idx] = noteObj;
+        else state.notes.unshift(noteObj);
+
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await setDoc(getSharedDoc('karkhano_notes', noteObj.id), noteObj);
+          } catch (err) {
+            console.warn('Cloud note save failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('નોંધ સેવ', logMessage);
+      }
+
+      async function deleteNoteFromCloud(noteId, logMessage) {
+        state.notes = state.notes.filter((n) => n.id !== noteId);
+        state.lastSavedAt = getGujaratiTimestamp();
+        persistLocalCache();
+
+        if (cloudReady && cloudUser) {
+          try {
+            await deleteDoc(getSharedDoc('karkhano_notes', noteId));
+          } catch (err) {
+            console.warn('Cloud note delete failed:', err);
+          }
+        }
+        if (logMessage) await recordAuditLog('નોંધ ડિલીટ', logMessage);
+      }
+
+      function updateCloudBadge(isOnline, uidText) {
+        const dot = document.getElementById('cloud-sync-dot');
+        const label = document.getElementById('cloud-sync-label');
+        const recStatus = document.getElementById('records-cloud-status');
+        const recUid = document.getElementById('records-device-uid');
+
+        if (isOnline) {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          if (label) label.textContent = 'લાઇવ ક્લાઉડ સિંક ચાલુ';
+          if (recStatus) recStatus.textContent = 'લાઇવ ક્લાઉડ સિંક ચાલુ છે (બધા ફોનમાં સિંક)';
+          if (recUid && uidText) recUid.textContent = uidText.slice(0, 12);
+        } else {
+          if (dot) dot.className = 'w-2 h-2 rounded-full bg-amber-400';
+          if (label) label.textContent = 'ઓફલાઇન સેવ મોડ';
+          if (recStatus) recStatus.textContent = 'લોકલ ઓફલાઇન સેવ મોડ ચાલુ છે';
         }
       }
 
       async function initCloudSync() {
+        loadLocalCache();
+
         if (!rawFirebaseConfig) {
-          updateCloudBadgeUI(false, 'ઓફલાઇન મોડ (Config નથી)');
-          seedDefaultLocalDataIfEmpty();
+          seedStarterDataIfEmpty();
+          updateCloudBadge(false);
+          refreshActiveView();
           return;
         }
 
         try {
-          const firebaseConfig = typeof rawFirebaseConfig === 'string'
-            ? JSON.parse(rawFirebaseConfig)
-            : rawFirebaseConfig;
+          const parsedConfig = typeof rawFirebaseConfig === 'string' ? JSON.parse(rawFirebaseConfig) : rawFirebaseConfig;
+          const fbApp = initializeApp(parsedConfig);
+          auth = getAuth(fbApp);
+          db = getFirestore(fbApp);
 
-          const app = initializeApp(firebaseConfig);
-          db = getFirestore(app);
-          auth = getAuth(app);
-
-          // Rule 3: Always authenticate BEFORE subscribing to any Firestore collection
-          if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-            const cred = await signInWithCustomToken(auth, __initial_auth_token);
+          if (initialAuthToken) {
+            const cred = await signInWithCustomToken(auth, initialAuthToken);
             cloudUser = cred.user;
           } else {
             const cred = await signInAnonymously(auth);
             cloudUser = cred.user;
           }
 
-          if (!cloudUser) return;
           cloudReady = true;
-          updateCloudBadgeUI(true, 'લાઇવ ક્લાઉડ સિંક ચાલુ');
+          updateCloudBadge(true, cloudUser ? cloudUser.uid : 'connected');
 
-          let initialWorkersLoaded = false;
-
-          // 1. Real-Time Workers Listener (Rule 2: simple collection query, sort in JS)
           onSnapshot(
-            getSharedCol('karkhano_workers'),
-            async (snapshot) => {
+            getSharedCollection('karkhano_workers'),
+            (snap) => {
               const list = [];
-              snapshot.forEach((docSnap) => {
-                list.push({ id: docSnap.id, ...docSnap.data() });
-              });
+              snap.forEach((docSnap) => list.push(docSnap.data()));
               list.sort((a, b) => (a.createdAtMs || 0) - (b.createdAtMs || 0));
-
-              if (!initialWorkersLoaded && list.length === 0) {
-                initialWorkersLoaded = true;
-                await seedInitialCloudData();
-                return;
+              if (list.length > 0) {
+                state.workers = list;
+                persistLocalCache();
+              } else if (state.workers.length === 0) {
+                seedStarterDataIfEmpty();
+                state.workers.forEach((w) => setDoc(getSharedDoc('karkhano_workers', w.id), w).catch(() => {}));
+                Object.keys(state.attendance).forEach((dKey) => {
+                  setDoc(getSharedDoc('karkhano_attendance', dKey), {
+                    dateISO: dKey,
+                    records: state.attendance[dKey],
+                  }).catch(() => {});
+                });
+                state.notes.forEach((n) => setDoc(getSharedDoc('karkhano_notes', n.id), n).catch(() => {}));
               }
-              initialWorkersLoaded = true;
-              state.workers = list;
-              state.lastSavedAt = getGujaratiTimestamp();
               refreshActiveView();
             },
-            (error) => {
-              console.error('Workers snapshot error:', error);
-              updateCloudBadgeUI(false, 'સિંક ભૂલ (ફરી પ્રયાસ કરો)');
-            }
+            (err) => console.warn('Workers snapshot error:', err)
           );
 
-          // 2. Real-Time Daily Attendance Listener (1 document per YYYY-MM-DD date)
           onSnapshot(
-            getSharedCol('karkhano_attendance'),
-            (snapshot) => {
-              const attMap = {};
-              snapshot.forEach((docSnap) => {
+            getSharedCollection('karkhano_attendance'),
+            (snap) => {
+              snap.forEach((docSnap) => {
                 const data = docSnap.data();
-                attMap[docSnap.id] = data.records || {};
+                if (data && data.dateISO && data.records) {
+                  state.attendance[data.dateISO] = data.records;
+                }
               });
-              state.attendance = attMap;
-              state.lastSavedAt = getGujaratiTimestamp();
+              persistLocalCache();
               refreshActiveView();
             },
-            (error) => {
-              console.error('Attendance snapshot error:', error);
-            }
+            (err) => console.warn('Attendance snapshot error:', err)
           );
 
-          // 3. Real-Time Notes Listener
           onSnapshot(
-            getSharedCol('karkhano_notes'),
-            (snapshot) => {
-              const notesList = [];
-              snapshot.forEach((docSnap) => {
-                notesList.push({ id: docSnap.id, ...docSnap.data() });
-              });
-              notesList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
-              state.notes = notesList;
-              state.lastSavedAt = getGujaratiTimestamp();
+            getSharedCollection('karkhano_notes'),
+            (snap) => {
+              const list = [];
+              snap.forEach((docSnap) => list.push(docSnap.data()));
+              list.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+              if (list.length > 0) {
+                state.notes = list;
+                persistLocalCache();
+              }
               refreshActiveView();
             },
-            (error) => {
-              console.error('Notes snapshot error:', error);
-            }
+            (err) => console.warn('Notes snapshot error:', err)
           );
 
-          // 4. Real-Time Login & Activity Audit Logs Listener
           onSnapshot(
-            getSharedCol('karkhano_logs'),
-            (snapshot) => {
-              const logsList = [];
-              snapshot.forEach((docSnap) => {
-                logsList.push({ id: docSnap.id, ...docSnap.data() });
-              });
-              logsList.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
-              state.logs = logsList.slice(0, 150);
-              refreshActiveView();
+            getSharedCollection('karkhano_logs'),
+            (snap) => {
+              const list = [];
+              snap.forEach((docSnap) => list.push(docSnap.data()));
+              list.sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+              state.logs = list.slice(0, 200);
+              persistLocalCache();
+              if (state.isAuthenticated && state.activeTab === 'records') {
+                renderRecordsPage();
+              }
             },
-            (error) => {
-              console.error('Logs snapshot error:', error);
-            }
+            (err) => console.warn('Logs snapshot error:', err)
           );
         } catch (err) {
-          console.error('Firebase initialization failed:', err);
-          updateCloudBadgeUI(false, 'ક્લાઉડ કનેક્શન નિષ્ફળ');
-          seedDefaultLocalDataIfEmpty();
+          console.warn('Firebase init fallback to local cache:', err);
+          seedStarterDataIfEmpty();
+          updateCloudBadge(false);
+          refreshActiveView();
         }
-      }
-
-      function seedDefaultLocalDataIfEmpty() {
-        if (state.workers.length > 0) return;
-        state.workers = [
-          { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100, savedBy: 'admin', createdAtMs: 1 },
-          { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75, savedBy: 'admin', createdAtMs: 2 },
-          { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60, savedBy: 'admin', createdAtMs: 3 },
-        ];
-      }
-
-      async function seedInitialCloudData() {
-        if (!cloudReady || !cloudUser) return;
-        const defaultWorkers = [
-          { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100, savedBy: 'admin', createdAtMs: Date.now() + 1 },
-          { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75, savedBy: 'admin', createdAtMs: Date.now() + 2 },
-          { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60, savedBy: 'admin', createdAtMs: Date.now() + 3 },
-        ];
-        for (const w of defaultWorkers) {
-          await setDoc(getSharedDoc('karkhano_workers', w.id), w);
-        }
-
-        const today = getTodayISO();
-        await setDoc(getSharedDoc('karkhano_attendance', today), {
-          date: today,
-          records: {
-            w_101: { status: 'P', otHours: 2, savedBy: 'admin' },
-            w_102: { status: 'P', otHours: 1.5, savedBy: 'admin' },
-            w_103: { status: 'H', otHours: 0, savedBy: 'admin' },
-          },
-        });
-
-        await setDoc(getSharedDoc('karkhano_notes', 'n_1'), {
-          id: 'n_1',
-          title: 'આજનો ઉત્પાદન ટાર્ગેટ (બેચ #42)',
-          category: 'ઉત્પાદન',
-          content: 'સાંજે 5:00 વાગ્યા સુધીમાં સેન્ચ્યુરી હેવી મિજાગરાના 250 નંગ તૈયાર કરવાના છે. દરેક 50 નંગ પછી માપ ચેક કરવું.',
-          updatedAt: getGujaratiTimestamp(),
-          savedBy: 'admin',
-          createdAtMs: Date.now(),
-        });
-      }
-
-      async function saveSingleWorkerToCloud(workerObj, logDetail) {
-        const idx = state.workers.findIndex((w) => w.id === workerObj.id);
-        if (idx !== -1) state.workers[idx] = workerObj;
-        else state.workers.push(workerObj);
-
-        if (cloudReady && cloudUser) {
-          try {
-            await setDoc(getSharedDoc('karkhano_workers', workerObj.id), workerObj);
-          } catch (e) {
-            showToast('ક્લાઉડમાં કારીગર સેવ થઈ શક્યા નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('કારીગર ફેરફાર', logDetail);
-      }
-
-      async function deleteWorkerFromCloud(workerId, logDetail) {
-        state.workers = state.workers.filter((w) => w.id !== workerId);
-        if (cloudReady && cloudUser) {
-          try {
-            await deleteDoc(getSharedDoc('karkhano_workers', workerId));
-          } catch (e) {
-            showToast('ક્લાઉડમાંથી કારીગર ડિલીટ થઈ શક્યા નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('કારીગર ફેરફાર', logDetail);
-      }
-
-      async function saveDateAttendanceToCloud(dateISO, logDetail) {
-        const dayRecords = state.attendance[dateISO] || {};
-        if (cloudReady && cloudUser) {
-          try {
-            await setDoc(getSharedDoc('karkhano_attendance', dateISO), {
-              date: dateISO,
-              records: dayRecords,
-              updatedAt: getGujaratiTimestamp(),
-              updatedBy: state.currentUser || ADMIN_ID,
-            });
-          } catch (e) {
-            showToast('ક્લાઉડમાં હાજરી સેવ થઈ શકી નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('હાજરી સેવ', logDetail);
-      }
-
-      async function deleteDateAttendanceFromCloud(dateISO, logDetail) {
-        delete state.attendance[dateISO];
-        if (cloudReady && cloudUser) {
-          try {
-            await deleteDoc(getSharedDoc('karkhano_attendance', dateISO));
-          } catch (e) {
-            showToast('ક્લાઉડમાંથી હાજરી ડિલીટ થઈ શકી નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('હાજરી સેવ', logDetail);
-      }
-
-      async function saveSingleNoteToCloud(noteObj, logDetail) {
-        const idx = state.notes.findIndex((n) => n.id === noteObj.id);
-        if (idx !== -1) state.notes[idx] = noteObj;
-        else state.notes.unshift(noteObj);
-
-        if (cloudReady && cloudUser) {
-          try {
-            await setDoc(getSharedDoc('karkhano_notes', noteObj.id), noteObj);
-          } catch (e) {
-            showToast('ક્લાઉડમાં નોંધ સેવ થઈ શકી નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('નોંધ સેવ', logDetail);
-      }
-
-      async function deleteNoteFromCloud(noteId, logDetail) {
-        state.notes = state.notes.filter((n) => n.id !== noteId);
-        if (cloudReady && cloudUser) {
-          try {
-            await deleteDoc(getSharedDoc('karkhano_notes', noteId));
-          } catch (e) {
-            showToast('ક્લાઉડમાંથી નોંધ ડિલીટ થઈ શકી નથી.', 'error');
-          }
-        }
-        if (logDetail) await recordAuditLog('નોંધ સેવ', logDetail);
-      }
-
-      // Helper: Normalize attendance entry for a worker on a given date
-      function getWorkerDayRecord(dateISO, workerId) {
-        const dayMap = state.attendance[dateISO] || {};
-        const entry = dayMap[workerId];
-        if (!entry) return { status: '', otHours: 0 };
-        if (typeof entry === 'string') return { status: entry, otHours: 0 };
-        return {
-          status: entry.status || '',
-          otHours: Math.max(0, Number(entry.otHours) || 0),
-        };
-      }
-
-      // Helper: Calculate shift pay, OT pay, and total pay for a worker on a date
-      function calculateWorkerEarnings(worker, record) {
-        const dailyRate = Number(worker.dailyRate) || 0;
-        const otRate = Number(worker.otRate) || 0;
-
-        let shiftPay = 0;
-        if (record.status === 'P') shiftPay = dailyRate;
-        else if (record.status === 'H') shiftPay = dailyRate * 0.5;
-
-        const otPay = record.otHours * otRate;
-        const totalPay = shiftPay + otPay;
-
-        return { shiftPay, otPay, totalPay };
       }
 
       // -------------------------------------------------------------------
-      // 3. TOAST & CUSTOM CONFIRM MODAL HELPERS
+      // 4. AUTHENTICATION LOGIC (ONE-TIME LOGIN REMEMBERED ACROSS LAUNCHES)
       // -------------------------------------------------------------------
-      function showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-
-        const colors =
-          type === 'error'
-            ? 'bg-red-900 border-red-500 text-white'
-            : type === 'info'
-            ? 'bg-slate-900 border-amber-500 text-white'
-            : 'bg-emerald-900 border-emerald-400 text-white';
-
-        toast.className = `pointer-events-auto border-l-4 ${colors} px-4 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-bold flex items-center justify-between gap-3 transition-all duration-300 opacity-0 translate-y-2`;
-        toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
-
-        container.appendChild(toast);
-        requestAnimationFrame(() => {
-          toast.classList.remove('opacity-0', 'translate-y-2');
-        });
-
-        setTimeout(() => {
-          toast.classList.add('opacity-0', 'translate-y-2');
-          setTimeout(() => toast.remove(), 300);
-        }, 2800);
+      function savePersistentLoginSession(userDisplayName) {
+        try {
+          window.localStorage.setItem(
+            SESSION_STORAGE_KEY,
+            JSON.stringify({
+              isAuthenticated: true,
+              currentUser: userDisplayName || ADMIN_ID,
+              loggedInAt: Date.now(),
+            })
+          );
+        } catch (err) {
+          console.warn('Could not persist login state:', err);
+        }
       }
 
-      function showConfirmModal(title, message, onConfirm) {
-        const modal = document.getElementById('confirm-modal');
-        const titleEl = document.getElementById('confirm-title');
-        const msgEl = document.getElementById('confirm-message');
-        const okBtn = document.getElementById('confirm-ok-btn');
-        const cancelBtn = document.getElementById('confirm-cancel-btn');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        const cleanup = () => {
-          modal.classList.add('hidden');
-          modal.classList.remove('flex');
-          okBtn.onclick = null;
-          cancelBtn.onclick = null;
-        };
-
-        cancelBtn.onclick = cleanup;
-        okBtn.onclick = () => {
-          cleanup();
-          onConfirm();
-        };
+      function clearPersistentLoginSession() {
+        try {
+          window.localStorage.removeItem(SESSION_STORAGE_KEY);
+        } catch (err) {
+          console.warn('Could not clear login state:', err);
+        }
       }
 
-      // -------------------------------------------------------------------
-      // 4. AUTHENTICATION LOGIC
-      // -------------------------------------------------------------------
+      function restorePersistentLoginSession() {
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('autologin') === '1') {
+            const sharedStaffName = urlParams.get('user') || 'કારખાના સ્ટાફ (admin)';
+            state.isAuthenticated = true;
+            state.currentUser = sharedStaffName;
+            savePersistentLoginSession(sharedStaffName);
+            return true;
+          }
+
+          const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
+          if (!raw) return false;
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.isAuthenticated === true) {
+            state.isAuthenticated = true;
+            state.currentUser = parsed.currentUser || ADMIN_ID;
+            return true;
+          }
+        } catch (err) {
+          console.warn('Could not restore login state:', err);
+        }
+        return false;
+      }
+
       function updateAuthUI() {
         const loginView = document.getElementById('login-view');
         const appShell = document.getElementById('app-shell');
@@ -1702,10 +1800,11 @@
             const activeDisplayUser = operatorName ? `${operatorName} (${enteredId})` : enteredId;
             state.isAuthenticated = true;
             state.currentUser = activeDisplayUser;
-            await recordAuditLog('લોગિન', `યુઝર "${activeDisplayUser}" એ લાઇવ મલ્ટી-યુઝર એપમાં લોગિન કર્યું.`);
+            savePersistentLoginSession(activeDisplayUser);
+            await recordAuditLog('લોગિન', `યુઝર "${activeDisplayUser}" એ લાઇવ મલ્ટી-યુઝર એપમાં લોગિન કર્યું (વન-ટાઇમ લોગિન સેવ).`);
             loginForm.reset();
             updateAuthUI();
-            showToast(`સ્વાગત છે ${activeDisplayUser}! બધા ફોનમાં લાઇવ ડેટા સિંક ચાલુ છે.`);
+            showToast(`સ્વાગત છે ${activeDisplayUser}! હવે આ ફોનમાં ફરી લોગિન કરવાની જરૂર નથી.`);
           } else {
             loginErrorText.textContent = 'ખોટું ID અથવા પાસવર્ડ. કૃપા કરીને ID: admin અને પાસવર્ડ: admin@123 લખો.';
             loginError.classList.remove('hidden');
@@ -1714,6 +1813,7 @@
 
         logoutBtn.addEventListener('click', async () => {
           await recordAuditLog('લોગઆઉટ', `યુઝર "${state.currentUser}" એ લોગઆઉટ કર્યું (ક્લાઉડમાં બધા રેકોર્ડ્સ સુરક્ષિત છે).`);
+          clearPersistentLoginSession();
           state.isAuthenticated = false;
           updateAuthUI();
           showToast('સુરક્ષિત રીતે લોગઆઉટ થઈ ગયું છે.', 'info');
@@ -3346,11 +3446,13 @@
         const clearLogsBtn = document.getElementById('clear-logs-btn');
         const clearAllBtn = document.getElementById('clear-all-records-btn');
         const copyAppLinkBtn = document.getElementById('copy-app-link-btn');
+        const copyAutoLoginLinkBtn = document.getElementById('copy-autologin-link-btn');
 
         if (copyAppLinkBtn) {
           copyAppLinkBtn.addEventListener('click', () => {
+            const baseUrl = window.location.href.split('?')[0];
             const temp = document.createElement('textarea');
-            temp.value = window.location.href;
+            temp.value = baseUrl;
             temp.style.position = 'fixed';
             temp.style.left = '-9999px';
             document.body.appendChild(temp);
@@ -3360,6 +3462,27 @@
               showToast('એપ લિંક કોપી થઈ ગઈ! હવે બધા મેનેજર/સ્ટાફને WhatsApp માં મોકલો.');
             } catch (err) {
               showToast('લિંક કોપી થઈ શકી નથી.', 'error');
+            } finally {
+              document.body.removeChild(temp);
+            }
+          });
+        }
+
+        if (copyAutoLoginLinkBtn) {
+          copyAutoLoginLinkBtn.addEventListener('click', () => {
+            const baseUrl = window.location.href.split('?')[0];
+            const autoUrl = `${baseUrl}?autologin=1`;
+            const temp = document.createElement('textarea');
+            temp.value = autoUrl;
+            temp.style.position = 'fixed';
+            temp.style.left = '-9999px';
+            document.body.appendChild(temp);
+            temp.select();
+            try {
+              document.execCommand('copy');
+              showToast('ઓટો-લોગિન લિંક કોપી થઈ ગઈ! બીજા ફોનમાં આ લિંક ખોલતા જ એપ સીધી ખુલશે.');
+            } catch (err) {
+              showToast('ઓટો-લોગિન લિંક કોપી થઈ શકી નથી.', 'error');
             } finally {
               document.body.removeChild(temp);
             }
@@ -3548,6 +3671,7 @@
       // 10. INITIALIZE APPLICATION & REAL-TIME CLOUD SYNC ON DOM READY
       // -------------------------------------------------------------------
       window.addEventListener('DOMContentLoaded', async () => {
+        restorePersistentLoginSession();
         setupPWAManifestAndIcons();
         setupLoginEvents();
         setupNavigationEvents();
