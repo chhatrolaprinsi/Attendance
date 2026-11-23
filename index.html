@@ -1,31 +1,51 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="gu">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Century Product — Karkhano Management</title>
+  <title>સેન્ચ્યુરી પ્રોડક્ટ — કારખાના મેનેજમેન્ટ</title>
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Font: Inter -->
+  <!-- html2canvas & jsPDF for crisp Gujarati Unicode A4 PDF generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Google Font: Noto Sans Gujarati & Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Gujarati:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            sans: ['"Noto Sans Gujarati"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
           },
         },
       },
     };
   </script>
+  <style>
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-preview-area, #print-preview-area * {
+        visibility: visible;
+      }
+      #print-preview-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff;
+      }
+    }
+  </style>
 </head>
 <body class="bg-slate-100 text-slate-900 font-sans antialiased min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
 
   <!-- ===================================================================== -->
-  <!-- TOAST NOTIFICATION / MESSAGE BOX (Replaces alert/confirm)             -->
+  <!-- TOAST NOTIFICATION / MESSAGE BOX                                      -->
   <!-- ===================================================================== -->
   <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none max-w-xs w-full px-4 sm:px-0"></div>
 
@@ -40,40 +60,80 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
           </svg>
         </div>
-        <h3 id="confirm-title" class="text-lg font-bold text-slate-900">Confirm Action</h3>
+        <h3 id="confirm-title" class="text-lg font-bold text-slate-900">ખાતરી કરો</h3>
       </div>
-      <p id="confirm-message" class="text-sm text-slate-600 mb-6">Are you sure you want to proceed?</p>
+      <p id="confirm-message" class="text-sm text-slate-600 mb-6">શું તમે ખરેખર આ માહિતી દૂર કરવા માંગો છો?</p>
       <div class="flex justify-end gap-3">
-        <button id="confirm-cancel-btn" type="button" class="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-semibold text-sm hover:bg-slate-100 transition cursor-pointer">
-          Cancel
+        <button id="confirm-cancel-btn" type="button" class="px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 font-bold text-sm hover:bg-slate-100 transition cursor-pointer">
+          રદ કરો
         </button>
-        <button id="confirm-ok-btn" type="button" class="px-4 py-2.5 rounded-lg bg-red-600 text-white font-semibold text-sm hover:bg-red-700 transition cursor-pointer">
-          Delete
+        <button id="confirm-ok-btn" type="button" class="px-4 py-2.5 rounded-lg bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition cursor-pointer">
+          દૂર કરો
         </button>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================== -->
-  <!-- 1. LOGIN VIEW                                                         -->
+  <!-- 1. LOGIN VIEW (એડમિન લોગિન)                                           -->
   <!-- ===================================================================== -->
   <section id="login-view" class="min-h-screen flex items-center justify-center bg-slate-900 px-4 py-10">
     <div class="w-full max-w-md">
       <!-- Industrial Top Accent Bar -->
       <div class="h-2 w-full bg-amber-500 rounded-t-2xl"></div>
       <div class="bg-slate-800 border border-slate-700 rounded-b-2xl shadow-2xl p-6 sm:p-8 text-white">
-        <!-- Brand Header -->
-        <div class="flex items-center gap-3.5 mb-6">
-          <div class="w-12 h-12 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center shadow-lg shrink-0">
-            <!-- Factory / Gear SVG Icon -->
-            <svg class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z" />
+        <!-- Brand Header with Century Karkhano Emblem -->
+        <div class="flex flex-col items-center text-center mb-6">
+          <div class="w-24 h-24 rounded-2xl bg-gradient-to-b from-slate-800 to-slate-950 border border-amber-500/40 shadow-xl flex items-center justify-center p-2 mb-3">
+            <!-- Century Karkhano C-Clock + Industrial Gear SVG Logo -->
+            <svg viewBox="0 0 120 120" class="w-full h-full drop-shadow-md" aria-label="Century Karkhano Logo">
+              <defs>
+                <linearGradient id="goldGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FDE68A" />
+                  <stop offset="45%" stop-color="#D97706" />
+                  <stop offset="100%" stop-color="#B45309" />
+                </linearGradient>
+                <linearGradient id="silverGradLogin" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F8FAFC" />
+                  <stop offset="50%" stop-color="#CBD5E1" />
+                  <stop offset="100%" stop-color="#64748B" />
+                </linearGradient>
+              </defs>
+              <!-- Left Thick 'C' Arc in Brushed Gold -->
+              <path d="M 60 16 A 44 44 0 1 0 60 104 L 60 88 A 28 28 0 1 1 60 32 Z" fill="url(#goldGradLogin)" />
+              <!-- Right Industrial Gear Half in Gold -->
+              <path d="M 62 10 L 68 10 L 70 18 A 42 42 0 0 1 82 23 L 89 18 L 94 23 L 89 30 A 42 42 0 0 1 96 42 L 104 44 L 104 51 L 96 53 A 42 42 0 0 1 96 67 L 104 69 L 104 76 L 96 78 A 42 42 0 0 1 89 90 L 94 97 L 89 102 L 82 97 A 42 42 0 0 1 70 102 L 68 110 L 62 110 L 62 94 A 34 34 0 0 0 62 26 Z" fill="url(#goldGradLogin)" />
+              <!-- Inner Silver Accent Ring -->
+              <path d="M 62 29 A 31 31 0 0 1 62 91" fill="none" stroke="url(#silverGradLogin)" stroke-width="3.5" stroke-linecap="round" />
+              <!-- Clock Tick Marks (8 to 5 Shift) -->
+              <g stroke="url(#goldGradLogin)" stroke-width="2.2" stroke-linecap="round">
+                <line x1="60" y1="34" x2="60" y2="39" />
+                <line x1="73" y1="38" x2="70.5" y2="42" />
+                <line x1="82" y1="47" x2="78" y2="49.5" />
+                <line x1="86" y1="60" x2="81" y2="60" />
+                <line x1="82" y1="73" x2="78" y2="70.5" />
+                <line x1="73" y1="82" x2="70.5" y2="78" />
+                <line x1="60" y1="86" x2="60" y2="81" />
+                <line x1="47" y1="82" x2="49.5" y2="78" />
+                <line x1="38" y1="73" x2="42" y2="70.5" />
+                <line x1="34" y1="60" x2="39" y2="60" />
+                <line x1="38" y1="47" x2="42" y2="49.5" />
+                <line x1="47" y1="38" x2="49.5" y2="42" />
+              </g>
+              <!-- Clock Hands (Pointing to 8:00 & 12:00 / 5:00) -->
+              <line x1="60" y1="60" x2="60" y2="38" stroke="url(#goldGradLogin)" stroke-width="3.5" stroke-linecap="round" />
+              <line x1="60" y1="60" x2="44" y2="70" stroke="url(#goldGradLogin)" stroke-width="3.5" stroke-linecap="round" />
+              <circle cx="60" cy="60" r="4.5" fill="url(#goldGradLogin)" stroke="#0f172a" stroke-width="1.5" />
             </svg>
           </div>
+          <span class="inline-block text-[11px] font-bold tracking-widest text-amber-400 uppercase">CENTURY KARKHANO</span>
+          <h1 class="text-2xl font-extrabold tracking-tight text-white mt-0.5">સેન્ચ્યુરી પ્રોડક્ટ</h1>
+          <p class="text-xs text-slate-400 mt-0.5">સેન્ચ્યુરી કારખાનું &bull; હાજરી, ઓવરટાઇમ અને નોંધ</p>
+        </div>
           <div>
-            <span class="inline-block text-[11px] font-bold uppercase tracking-widest text-amber-400">Workshop ERP</span>
-            <h1 class="text-2xl font-extrabold tracking-tight text-white">Century Product</h1>
-            <p class="text-xs text-slate-400">Karkhano Attendance &amp; Operations</p>
+            <span class="inline-block text-xs font-bold tracking-wider text-amber-400">કારખાના ERP સિસ્ટમ</span>
+            <h1 class="text-2xl font-extrabold tracking-tight text-white">સેન્ચ્યુરી પ્રોડક્ટ</h1>
+            <p class="text-xs text-slate-400">કારખાના હાજરી, ઓવરટાઇમ અને નોંધ</p>
           </div>
         </div>
 
@@ -82,41 +142,51 @@
           <svg class="w-5 h-5 text-red-400 shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span id="login-error-text">Invalid Admin ID or Password.</span>
+          <span id="login-error-text">ખોટું એડમિન ID અથવા પાસવર્ડ.</span>
         </div>
 
         <!-- Login Form -->
         <form id="login-form" class="space-y-4" novalidate>
           <div>
-            <label for="login-id" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Admin ID</label>
+            <label for="login-operator-name" class="block text-xs font-bold text-slate-300 mb-1.5">તમારું નામ / લોગિન કરનાર વ્યક્તિ (Who is logging in?)</label>
+            <input
+              type="text"
+              id="login-operator-name"
+              placeholder="દા.ત. જયેશભાઈ (મેનેજર) અથવા માલિક"
+              class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 transition text-sm font-medium"
+            />
+          </div>
+
+          <div>
+            <label for="login-id" class="block text-xs font-bold text-slate-300 mb-1.5">એડમિન ID (Admin ID)</label>
             <input
               type="text"
               id="login-id"
               autocomplete="username"
-              placeholder="Enter admin ID"
+              placeholder="admin લખો"
               class="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 transition text-sm font-medium"
               required
             />
           </div>
 
           <div>
-            <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">Password</label>
+            <label for="login-password" class="block text-xs font-bold text-slate-300 mb-1.5">પાસવર્ડ (Password)</label>
             <div class="relative">
               <input
                 type="password"
                 id="login-password"
                 autocomplete="current-password"
-                placeholder="Enter password"
+                placeholder="admin@123 લખો"
                 class="w-full px-4 py-3 pr-12 rounded-xl bg-slate-900 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/30 transition text-sm font-medium"
                 required
               />
               <button
                 type="button"
                 id="toggle-password-btn"
-                aria-label="Toggle password visibility"
+                aria-label="પાસવર્ડ જુઓ"
                 class="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-400 hover:text-amber-400 transition cursor-pointer"
               >
-                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
                   <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -126,24 +196,24 @@
 
           <button
             type="submit"
-            class="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-extrabold text-sm uppercase tracking-wider shadow-lg shadow-amber-500/20 transition cursor-pointer"
+            class="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 active:bg-amber-600 text-slate-950 font-extrabold text-sm tracking-wide shadow-lg shadow-amber-500/20 transition cursor-pointer"
           >
-            Sign In to Karkhano
+            કારખાનામાં લોગિન કરો
           </button>
         </form>
 
         <!-- Quick-Fill Demo Credentials Box -->
         <div class="mt-6 pt-5 border-t border-slate-700/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-900/60 p-3.5 rounded-xl">
           <div class="text-xs text-slate-400">
-            <p class="font-semibold text-slate-300">Default Admin Credentials:</p>
-            <p class="mt-0.5">ID: <code class="text-amber-400 font-mono font-bold">admin</code> &bull; Pass: <code class="text-amber-400 font-mono font-bold">admin@123</code></p>
+            <p class="font-bold text-slate-300">ડિફોલ્ટ એડમિન વિગત:</p>
+            <p class="mt-0.5">ID: <code class="text-amber-400 font-mono font-bold">admin</code> &bull; પાસવર્ડ: <code class="text-amber-400 font-mono font-bold">admin@123</code></p>
           </div>
           <button
             type="button"
             id="quick-fill-btn"
-            class="px-3 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-amber-300 text-xs font-bold transition shrink-0 cursor-pointer"
+            class="px-3.5 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-amber-300 text-xs font-bold transition shrink-0 cursor-pointer"
           >
-            Auto-Fill
+            ઓટો-ફિલ કરો
           </button>
         </div>
       </div>
@@ -151,7 +221,7 @@
   </section>
 
   <!-- ===================================================================== -->
-  <!-- 2. MAIN APPLICATION SHELL (Visible after Login)                       -->
+  <!-- 2. MAIN APPLICATION SHELL (લોગિન પછીનું મુખ્ય પેજ)                    -->
   <!-- ===================================================================== -->
   <div id="app-shell" class="hidden flex-1 flex-col min-h-screen pb-20 md:pb-8">
 
@@ -160,39 +230,69 @@
       <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
         <!-- Brand Logo -->
         <div class="flex items-center gap-3">
-          <div class="w-9 h-9 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center font-black shadow-xs shrink-0">
-            CP
+          <div class="w-10 h-10 rounded-xl bg-slate-800 border border-amber-500/40 flex items-center justify-center p-1 shadow-sm shrink-0">
+            <svg viewBox="0 0 120 120" class="w-full h-full" aria-label="Century Karkhano Logo">
+              <defs>
+                <linearGradient id="goldGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FDE68A" />
+                  <stop offset="50%" stop-color="#F59E0B" />
+                  <stop offset="100%" stop-color="#B45309" />
+                </linearGradient>
+                <linearGradient id="silverGradNav" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F8FAFC" />
+                  <stop offset="100%" stop-color="#94A3B8" />
+                </linearGradient>
+              </defs>
+              <path d="M 60 16 A 44 44 0 1 0 60 104 L 60 88 A 28 28 0 1 1 60 32 Z" fill="url(#goldGradNav)" />
+              <path d="M 62 10 L 68 10 L 70 18 A 42 42 0 0 1 82 23 L 89 18 L 94 23 L 89 30 A 42 42 0 0 1 96 42 L 104 44 L 104 51 L 96 53 A 42 42 0 0 1 96 67 L 104 69 L 104 76 L 96 78 A 42 42 0 0 1 89 90 L 94 97 L 89 102 L 82 97 A 42 42 0 0 1 70 102 L 68 110 L 62 110 L 62 94 A 34 34 0 0 0 62 26 Z" fill="url(#goldGradNav)" />
+              <path d="M 62 29 A 31 31 0 0 1 62 91" fill="none" stroke="url(#silverGradNav)" stroke-width="3.5" stroke-linecap="round" />
+              <line x1="60" y1="60" x2="60" y2="38" stroke="url(#goldGradNav)" stroke-width="4" stroke-linecap="round" />
+              <line x1="60" y1="60" x2="44" y2="70" stroke="url(#goldGradNav)" stroke-width="4" stroke-linecap="round" />
+              <circle cx="60" cy="60" r="4.5" fill="url(#goldGradNav)" />
+            </svg>
           </div>
           <div>
-            <h1 class="text-base sm:text-lg font-extrabold tracking-tight leading-none">Century Product</h1>
-            <p class="text-[11px] text-amber-400 font-semibold tracking-wider uppercase mt-0.5">Karkhano Management</p>
+            <h1 class="text-base sm:text-lg font-extrabold tracking-tight leading-none">સેન્ચ્યુરી પ્રોડક્ટ</h1>
+            <p class="text-[11px] text-amber-400 font-semibold mt-0.5">સેન્ચ્યુરી કારખાનું &bull; મેનેજમેન્ટ</p>
           </div>
         </div>
 
         <!-- Desktop Navigation Tabs -->
-        <nav class="hidden md:flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700" aria-label="Primary Navigation">
-          <button data-nav="dashboard" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
-            Admin Overview
+        <nav class="hidden md:flex items-center gap-1.5 bg-slate-800 p-1 rounded-xl border border-slate-700" aria-label="મુખ્ય મેનુ">
+          <button data-nav="dashboard" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            ડેશબોર્ડ
           </button>
-          <button data-nav="attendance" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
-            Worker Attendance
+          <button data-nav="attendance" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            કારીગર હાજરી અને પગાર
           </button>
-          <button data-nav="notes" class="nav-btn px-4 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
-            Karkhano Notes
+          <button data-nav="monthly" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            માસિક હિસાબ અને PDF
+          </button>
+          <button data-nav="notes" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            કારખાનાની નોંધ
+          </button>
+          <button data-nav="records" class="nav-btn px-3.5 py-2 rounded-lg text-sm font-bold transition cursor-pointer">
+            લોગિન અને સેવ રેકોર્ડ્સ
           </button>
         </nav>
 
-        <!-- Logout Button -->
-        <button
-          id="logout-btn"
-          type="button"
-          class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-red-600 text-slate-200 hover:text-white border border-slate-700 hover:border-red-500 text-xs sm:text-sm font-bold transition cursor-pointer"
-        >
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
-          </svg>
-          <span>Logout</span>
-        </button>
+        <!-- Active Login Badge & Logout Button -->
+        <div class="flex items-center gap-2">
+          <div id="active-user-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-emerald-400">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span id="active-user-label">admin</span>
+          </div>
+          <button
+            id="logout-btn"
+            type="button"
+            class="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-red-600 text-slate-200 hover:text-white border border-slate-700 hover:border-red-500 text-xs sm:text-sm font-bold transition cursor-pointer"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span>લોગઆઉટ</span>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -200,17 +300,17 @@
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
 
       <!-- ================================================================= -->
-      <!-- PAGE A: ADMIN OVERVIEW DASHBOARD                                  -->
+      <!-- PAGE A: ADMIN OVERVIEW DASHBOARD (ડેશબોર્ડ)                      -->
       <!-- ================================================================= -->
       <section id="page-dashboard" class="space-y-6">
         <!-- Welcome Banner -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-bold uppercase tracking-wider">
-              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Admin Active
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-bold">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span> એડમિન પેનલ ચાલુ છે
             </span>
-            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">Welcome, Karkhano Admin</h2>
-            <p id="dashboard-today-label" class="text-sm text-slate-500 mt-0.5">Today's Operations Summary</p>
+            <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 mt-2">નમસ્તે, કારખાના એડમિન</h2>
+            <p id="dashboard-today-label" class="text-sm text-slate-500 mt-0.5">આજનો કામકાજ અહેવાલ</p>
           </div>
           <div class="flex flex-wrap gap-2.5">
             <button
@@ -218,17 +318,24 @@
               data-jump="attendance"
               class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold shadow-xs transition cursor-pointer flex items-center gap-2"
             >
-              <span>Mark Today's Attendance</span>
+              <span>આજની હાજરી ભરો</span>
               <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
               </svg>
             </button>
             <button
               type="button"
-              data-jump="notes"
-              class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-sm font-bold shadow-xs transition cursor-pointer"
+              data-jump="monthly"
+              class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold shadow-xs transition cursor-pointer"
             >
-              + Add Note
+              માસિક PDF રિપોર્ટ
+            </button>
+            <button
+              type="button"
+              data-jump="records"
+              class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold shadow-xs transition cursor-pointer"
+            >
+              સેવ રેકોર્ડ્સ &amp; લોગિન હિસ્ટ્રી
             </button>
           </div>
         </div>
@@ -238,7 +345,7 @@
           <!-- Total Workers -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-slate-800">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Total Workers</span>
+              <span class="text-xs font-bold text-slate-500">કુલ કારીગરો</span>
               <span class="p-2 rounded-lg bg-slate-100 text-slate-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
@@ -246,13 +353,13 @@
               </span>
             </div>
             <p id="stat-total-workers" class="text-3xl font-extrabold text-slate-900 mt-3">0</p>
-            <p class="text-xs text-slate-500 mt-1">Registered karkhano staff</p>
+            <p class="text-xs text-slate-500 mt-1">કારખાનાના નોંધાયેલા સ્ટાફ</p>
           </div>
 
-          <!-- Present Today -->
+          <!-- Present / Half / Absent Today -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-emerald-600">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Present Today</span>
+              <span class="text-xs font-bold text-slate-500">આજની હાજરી</span>
               <span class="p-2 rounded-lg bg-emerald-50 text-emerald-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -260,46 +367,44 @@
               </span>
             </div>
             <p id="stat-present-today" class="text-3xl font-extrabold text-emerald-700 mt-3">0</p>
-            <p id="stat-present-pct" class="text-xs text-slate-500 mt-1">0% attendance rate</p>
+            <p id="stat-attendance-breakdown" class="text-xs text-slate-600 font-medium mt-1">0 હાજર &bull; 0 અડધો &bull; 0 ગેરહાજર</p>
           </div>
 
-          <!-- Absent / Half-Day Today -->
+          <!-- Total Overtime Hours Today -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-amber-500">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Half / Absent</span>
+              <span class="text-xs font-bold text-slate-500">આજના ઓવરટાઇમ કલાક</span>
               <span class="p-2 rounded-lg bg-amber-50 text-amber-700">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </span>
             </div>
-            <p id="stat-absent-half-today" class="text-3xl font-extrabold text-amber-600 mt-3">0</p>
-            <p id="stat-absent-half-detail" class="text-xs text-slate-500 mt-1">0 Half-Day &bull; 0 Absent</p>
+            <p id="stat-ot-hours" class="text-3xl font-extrabold text-amber-600 mt-3">0 કલાક</p>
+            <p class="text-xs text-slate-500 mt-1">સાંજે 5:00 પછીનું વધારાનું કામ</p>
           </div>
 
-          <!-- Total Notes -->
+          <!-- Total Daily Wage Payable Today -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs border-l-4 border-l-blue-600">
             <div class="flex items-center justify-between">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Saved Notes</span>
-              <span class="p-2 rounded-lg bg-blue-50 text-blue-700">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                </svg>
+              <span class="text-xs font-bold text-slate-500">આજનો કુલ પગાર ₹</span>
+              <span class="p-2 rounded-lg bg-blue-50 text-blue-700 font-extrabold text-sm">
+                ₹
               </span>
             </div>
-            <p id="stat-total-notes" class="text-3xl font-extrabold text-slate-900 mt-3">0</p>
-            <p class="text-xs text-slate-500 mt-1">Production &amp; stock logs</p>
+            <p id="stat-total-wage" class="text-3xl font-extrabold text-blue-700 mt-3">₹0</p>
+            <p class="text-xs text-slate-500 mt-1">શિફ્ટ + ઓવરટાઇમ મળીને</p>
           </div>
         </div>
 
         <!-- Two-Column Quick Overview Panels -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <!-- Today's Attendance Snapshot -->
+          <!-- Today's Attendance & Wage Snapshot -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-extrabold text-slate-900">Today's Worker Status</h3>
+              <h3 class="text-base font-extrabold text-slate-900">આજની કારીગર હાજરી અને પગાર</h3>
               <button type="button" data-jump="attendance" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
-                Open Full Sheet &rarr;
+                પૂરું રજિસ્ટર જુઓ &rarr;
               </button>
             </div>
             <div id="dashboard-worker-preview" class="divide-y divide-slate-100">
@@ -310,9 +415,9 @@
           <!-- Recent Karkhano Notes -->
           <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-base font-extrabold text-slate-900">Recent Karkhano Notes</h3>
+              <h3 class="text-base font-extrabold text-slate-900">તાજેતરની કારખાનાની નોંધ</h3>
               <button type="button" data-jump="notes" class="text-xs font-bold text-amber-700 hover:text-amber-800 underline cursor-pointer">
-                View All Notes &rarr;
+                બધી નોંધ જુઓ &rarr;
               </button>
             </div>
             <div id="dashboard-notes-preview" class="space-y-3">
@@ -323,161 +428,303 @@
       </section>
 
       <!-- ================================================================= -->
-      <!-- PAGE B: WORKER ATTENDANCE PAGE                                    -->
+      <!-- PAGE B: WORKER ATTENDANCE, 8-5 SHIFT & OVERTIME PAGE              -->
       <!-- ================================================================= -->
       <section id="page-attendance" class="hidden space-y-6">
-        <!-- Header & Date Controls -->
+        <!-- Date & Quick Shift Actions Bar -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
-              <h2 class="text-xl font-extrabold text-slate-900">Worker Attendance Register</h2>
-              <p class="text-sm text-slate-500">Tap P (Present), H (Half-Day), or A (Absent) to auto-save daily attendance.</p>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 text-xs font-extrabold mb-2">
+                નિયમિત શિફ્ટ સમય: સવારે 8:00 થી સાંજે 5:00
+              </span>
+              <h2 class="text-xl font-extrabold text-slate-900">કારીગર હાજરી, ઓવરટાઇમ અને પગાર રજિસ્ટર</h2>
+              <p class="text-sm text-slate-500 mt-0.5">
+                તારીખ: <span id="selected-date-display" class="font-bold text-slate-800">આજ</span>
+              </p>
             </div>
 
-            <!-- Date Picker & Export -->
             <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Date Picker -->
               <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-2">
-                <label for="attendance-date" class="text-xs font-bold uppercase text-slate-600 mr-2">Date:</label>
+                <label for="attendance-date" class="text-xs font-bold text-slate-600 mr-2">તારીખ:</label>
                 <input
                   type="date"
                   id="attendance-date"
                   class="bg-transparent text-sm font-bold text-slate-900 focus:outline-none cursor-pointer"
                 />
               </div>
+
               <button
                 type="button"
                 id="today-date-btn"
                 class="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition cursor-pointer"
               >
-                Today
+                આજ
               </button>
+
+              <button
+                type="button"
+                id="mark-all-present-btn"
+                class="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs transition cursor-pointer"
+              >
+                બધા હાજર (8-5)
+              </button>
+
               <button
                 type="button"
                 id="copy-report-btn"
-                class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs transition flex items-center gap-2 cursor-pointer"
+                class="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-bold shadow-xs transition flex items-center gap-1.5 cursor-pointer"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 7.5V6.108c0-1.135.845-2.098 1.976-2.192.373-.03.748-.057 1.123-.08M15.75 18H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08M15.75 18.75v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5A3.375 3.375 0 006.375 7.5H5.25m11.9-3.664A2.251 2.251 0 0015 2.25h-1.5a2.251 2.251 0 00-2.15 1.586m5.8 0c.065.21.1.433.1.664v.75h-6V4.5c0-.231.035-.454.1-.664M6.75 7.5H4.875c-.621 0-1.125.504-1.125 1.125v12c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V16.5a9 9 0 00-9-9z" />
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 17.25v3.375c0 .621-.504 1.125-1.125 1.125h-9.75a1.125 1.125 0 01-1.125-1.125V7.875c0-.621.504-1.125 1.125-1.125H6.75a9.06 9.06 0 011.5.124m7.5 10.376h3.375c.621 0 1.125-.504 1.125-1.125V11.25c0-4.46-3.243-8.161-7.5-8.876a9.06 9.06 0 00-1.5-.124H9.375c-.621 0-1.125.504-1.125 1.125v3.5m7.5 10.375H9.375a1.125 1.125 0 01-1.125-1.125v-9.25m12 6.625v-1.875a3.375 3.375 0 00-3.375-3.375h-1.5a1.125 1.125 0 01-1.125-1.125v-1.5a3.375 3.375 0 00-3.375-3.375H9.75" />
                 </svg>
-                <span>Copy Report</span>
+                <span>WhatsApp રિપોર્ટ કોપી કરો</span>
               </button>
             </div>
           </div>
 
-          <!-- Daily Attendance Summary Counters -->
-          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200">
-            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold uppercase text-slate-500">Total Staff</span>
-              <p id="att-count-total" class="text-2xl font-extrabold text-slate-900 mt-0.5">0</p>
-            </div>
+          <!-- Daily Attendance & Wage Tally Bar -->
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5 pt-5 border-t border-slate-200">
             <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold uppercase text-emerald-700">Present (P)</span>
-              <p id="att-count-present" class="text-2xl font-extrabold text-emerald-700 mt-0.5">0</p>
+              <span class="text-xs font-bold text-emerald-700 block">હાજર (8-5)</span>
+              <span id="att-count-present" class="text-2xl font-extrabold text-emerald-800">0</span>
             </div>
             <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold uppercase text-amber-700">Half-Day (H)</span>
-              <p id="att-count-half" class="text-2xl font-extrabold text-amber-700 mt-0.5">0</p>
+              <span class="text-xs font-bold text-amber-700 block">અડધો દિવસ</span>
+              <span id="att-count-half" class="text-2xl font-extrabold text-amber-800">0</span>
             </div>
             <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-              <span class="text-xs font-bold uppercase text-red-700">Absent (A)</span>
-              <p id="att-count-absent" class="text-2xl font-extrabold text-red-700 mt-0.5">0</p>
+              <span class="text-xs font-bold text-red-700 block">ગેરહાજર</span>
+              <span id="att-count-absent" class="text-2xl font-extrabold text-red-800">0</span>
+            </div>
+            <div class="bg-slate-100 border border-slate-300 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold text-slate-700 block">કુલ ઓવરટાઇમ</span>
+              <span id="att-total-ot" class="text-2xl font-extrabold text-slate-900">0 કલાક</span>
+            </div>
+            <div class="col-span-2 sm:col-span-1 bg-blue-50 border border-blue-200 rounded-xl p-3 text-center">
+              <span class="text-xs font-bold text-blue-700 block">કુલ આજનો પગાર</span>
+              <span id="att-total-payable" class="text-2xl font-extrabold text-blue-800">₹0</span>
             </div>
           </div>
         </div>
 
-        <!-- Add New Worker Accordion / Card -->
+        <!-- Add / Edit Worker Form (Different Rupees per Worker) -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <h3 class="text-base font-extrabold text-slate-900 mb-3 flex items-center gap-2">
-            <span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-black">+</span>
-            <span>Add New Worker to Karkhano</span>
-          </h3>
-          <form id="add-worker-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <div>
-              <label for="worker-name" class="block text-xs font-bold text-slate-600 mb-1">Worker Name *</label>
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <h3 id="worker-form-heading" class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+              <span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-black">+</span>
+              <span>નવો કારીગર ઉમેરો (અલગ પગાર અને ઓવરટાઇમ દર સાથે)</span>
+            </h3>
+            <button
+              type="button"
+              id="cancel-edit-worker-btn"
+              class="hidden px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
+            >
+              ફેરફાર રદ કરો
+            </button>
+          </div>
+
+          <form id="add-worker-form" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+            <input type="hidden" id="worker-edit-id" value="" />
+
+            <div class="lg:col-span-3">
+              <label for="worker-name" class="block text-xs font-bold text-slate-600 mb-1">કારીગરનું પૂરું નામ *</label>
               <input
                 type="text"
                 id="worker-name"
-                placeholder="e.g. Rameshbhai Patel"
+                placeholder="દા.ત. રમેશભાઈ પટેલ"
                 required
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
               />
             </div>
-            <div>
-              <label for="worker-role" class="block text-xs font-bold text-slate-600 mb-1">Role / Department *</label>
+
+            <div class="lg:col-span-2">
+              <label for="worker-role" class="block text-xs font-bold text-slate-600 mb-1">કામ / વિભાગ</label>
               <select
                 id="worker-role"
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+                class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-semibold text-slate-800"
               >
-                <option value="Karigar">Karigar (Craftsman)</option>
-                <option value="Machine Operator">Machine Operator</option>
-                <option value="Helper">Helper</option>
-                <option value="Welder / Fitter">Welder / Fitter</option>
-                <option value="Packing & Dispatch">Packing &amp; Dispatch</option>
-                <option value="Supervisor">Supervisor</option>
+                <option value="મશીન ઓપરેટર">મશીન ઓપરેટર</option>
+                <option value="કારીગર">કારીગર</option>
+                <option value="પેકિંગ સ્ટાફ">પેકિંગ સ્ટાફ</option>
+                <option value="હેલ્પર">હેલ્પર</option>
+                <option value="સુપરવાઇઝર">સુપરવાઇઝર</option>
               </select>
             </div>
-            <div>
-              <label for="worker-phone" class="block text-xs font-bold text-slate-600 mb-1">Phone / Daily Wage (Optional)</label>
+
+            <div class="lg:col-span-2">
+              <label for="worker-daily-rate" class="block text-xs font-bold text-slate-600 mb-1">રોજનો પગાર (8-5) ₹ *</label>
               <input
-                type="text"
-                id="worker-phone"
-                placeholder="e.g. 9876543210 or ₹600/day"
-                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
+                type="number"
+                id="worker-daily-rate"
+                min="0"
+                step="1"
+                placeholder="દા.ત. 700"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-900"
               />
             </div>
-            <div class="flex items-end">
-              <button
-                type="submit"
-                class="w-full py-2.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 font-extrabold text-sm uppercase tracking-wider shadow-xs transition cursor-pointer"
-              >
-                Add Worker
-              </button>
+
+            <div class="lg:col-span-2">
+              <label for="worker-ot-rate" class="block text-xs font-bold text-slate-600 mb-1">ઓવરટાઇમ દર (1 કલાક ₹) *</label>
+              <input
+                type="number"
+                id="worker-ot-rate"
+                min="0"
+                step="1"
+                placeholder="દા.ત. 90"
+                required
+                class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-900"
+              />
+            </div>
+
+            <div class="lg:col-span-3 flex flex-col justify-end">
+              <label for="worker-phone" class="block text-xs font-bold text-slate-600 mb-1">મોબાઇલ નંબર (વૈકલ્પિક)</label>
+              <div class="flex gap-2">
+                <input
+                  type="text"
+                  id="worker-phone"
+                  placeholder="98250 XXXXX"
+                  class="w-full px-3 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
+                />
+                <button
+                  type="submit"
+                  id="worker-submit-btn"
+                  class="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs sm:text-sm shadow-xs transition shrink-0 cursor-pointer"
+                >
+                  + ઉમેરો
+                </button>
+              </div>
             </div>
           </form>
         </div>
 
-        <!-- Worker List Header + Mark All Present Helper -->
+        <!-- Worker Attendance & Overtime Roster List -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-200">
-            <div>
-              <h3 class="text-base font-extrabold text-slate-900">
-                Attendance Sheet for <span id="selected-date-display" class="text-amber-700">Today</span>
-              </h3>
-              <p class="text-xs text-slate-500 mt-0.5">Unmarked workers are highlighted until a status is selected.</p>
-            </div>
-            <button
-              type="button"
-              id="mark-all-present-btn"
-              class="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-extrabold uppercase tracking-wider transition cursor-pointer self-start sm:self-auto"
-            >
-              &#10003; Mark All Present
-            </button>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
+            <h3 class="text-base font-extrabold text-slate-900">કારખાનાના કારીગરોની યાદી</h3>
+            <p class="text-xs text-slate-500">
+              <span class="font-bold text-emerald-700">હાજર (8-5)</span> = પૂરો પગાર &bull;
+              <span class="font-bold text-amber-700">અડધો દિવસ</span> = 50% પગાર &bull;
+              <span class="font-bold text-slate-700">ઓવરટાઇમ</span> = સાંજે 5 પછીના કલાક &times; કલાકનો દર
+            </p>
           </div>
 
-          <!-- Workers List Container -->
           <div id="worker-list-container" class="space-y-3">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- PAGE C: MONTHLY SUMMARY & INDIVIDUAL WORKER PDF REPORTS           -->
+      <!-- ================================================================= -->
+      <section id="page-monthly" class="hidden space-y-6">
+        <!-- Monthly Controls & Bulk Download Banner -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-100 text-blue-900 text-xs font-extrabold mb-2">
+                આખા મહિનાની હાજરી, ઓવરટાઇમ અને પગાર સ્લિપ (A4 PDF)
+              </span>
+              <h2 class="text-xl font-extrabold text-slate-900">માસિક પગાર હિસાબ અને દરેક કારીગરની અલગ PDF</h2>
+              <p class="text-sm text-slate-500 mt-0.5">
+                મહિનો પસંદ કરો અને દરેક કારીગરના 1 થી 30/31 તારીખ સુધીના કામની અલગ-અલગ PDF ડાઉનલોડ કરો.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <!-- Month & Year Picker -->
+              <div class="flex items-center bg-slate-100 border border-slate-300 rounded-xl px-3 py-2">
+                <label for="monthly-month-input" class="text-xs font-bold text-slate-700 mr-2">મહિનો પસંદ કરો:</label>
+                <input
+                  type="month"
+                  id="monthly-month-input"
+                  class="bg-transparent text-sm font-extrabold text-slate-900 focus:outline-none cursor-pointer"
+                />
+              </div>
+
+              <!-- Download All Workers Individually (Separate PDF per Worker) -->
+              <button
+                type="button"
+                id="download-all-pdfs-btn"
+                class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs sm:text-sm font-extrabold shadow-sm transition flex items-center gap-2 cursor-pointer"
+              >
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                <span>બધા કારીગરોની અલગ-અલગ PDF ડાઉનલોડ કરો</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bulk Progress Indicator Bar -->
+          <div id="bulk-pdf-progress" class="hidden mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950">
+            <div class="flex items-center justify-between text-xs font-extrabold mb-1.5">
+              <span id="bulk-pdf-status-text">PDF તૈયાર થઈ રહી છે...</span>
+              <span id="bulk-pdf-counter">0 / 0</span>
+            </div>
+            <div class="w-full h-2.5 bg-amber-200 rounded-full overflow-hidden">
+              <div id="bulk-pdf-bar" class="h-full bg-amber-600 transition-all duration-300" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Monthly Grand Totals KPIs -->
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5">
+              <span class="text-xs font-bold text-slate-500">પસંદ કરેલ મહિનો</span>
+              <p id="monthly-label-display" class="text-lg font-extrabold text-slate-900 mt-1">-</p>
+              <span id="monthly-days-count" class="text-[11px] font-semibold text-slate-500">30 દિવસ</span>
+            </div>
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
+              <span class="text-xs font-bold text-emerald-700">કુલ કામના દિવસ / કલાક</span>
+              <p id="monthly-total-days" class="text-lg font-extrabold text-emerald-800 mt-1">0 દિવસ</p>
+              <span id="monthly-total-reg-hours" class="text-[11px] font-semibold text-emerald-700">0 નિયમિત કલાક</span>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+              <span class="text-xs font-bold text-amber-800">કુલ ઓવરટાઇમ (આખા મહિનાના)</span>
+              <p id="monthly-total-ot" class="text-lg font-extrabold text-amber-900 mt-1">0 કલાક</p>
+              <span id="monthly-total-ot-pay" class="text-[11px] font-semibold text-amber-800">OT પગાર: ₹0</span>
+            </div>
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-3.5">
+              <span class="text-xs font-bold text-blue-700">કુલ માસિક પગાર ચૂકવવાપાત્ર</span>
+              <p id="monthly-grand-total" class="text-xl font-extrabold text-blue-800 mt-1">₹0</p>
+              <span class="text-[11px] font-semibold text-blue-700">બધા કારીગરો મળીને</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monthly Summary Cards / Table for Each Worker -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+            <h3 class="text-base font-extrabold text-slate-900">દરેક કારીગરનો માસિક હિસાબ અને વ્યક્તિગત PDF</h3>
+            <span class="text-xs font-bold text-slate-500">1 કારીગર = 1 અલગ PDF ફાઇલ</span>
+          </div>
+
+          <div id="monthly-workers-list" class="space-y-4">
             <!-- Rendered dynamically via JS -->
           </div>
         </div>
       </section>
 
       <!-- ================================================================= -->
-      <!-- PAGE C: KARKHANO NOTES PAGE                                       -->
+      <!-- PAGE D: KARKHANO NOTES PAGE (કારખાનાની નોંધ)                      -->
       <!-- ================================================================= -->
       <section id="page-notes" class="hidden space-y-6">
         <!-- Add / Edit Note Card -->
         <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
           <div class="flex items-center justify-between mb-4">
             <div>
-              <h2 id="note-form-heading" class="text-xl font-extrabold text-slate-900">Create Karkhano Note</h2>
-              <p class="text-sm text-slate-500">Record daily production targets, raw material orders, machine repairs, or reminders.</p>
+              <h2 id="note-form-heading" class="text-xl font-extrabold text-slate-900">કારખાનાની નવી નોંધ લખો</h2>
+              <p class="text-sm text-slate-500">રોજનું ઉત્પાદન, કાચો માલ/સ્ટોક, મશીન રિપેરિંગ અથવા જરૂરી સૂચનાઓ સાચવો.</p>
             </div>
             <button
               type="button"
               id="cancel-edit-note-btn"
               class="hidden px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold cursor-pointer"
             >
-              Cancel Edit
+              ફેરફાર રદ કરો
             </button>
           </div>
 
@@ -485,35 +732,35 @@
             <input type="hidden" id="note-edit-id" value="" />
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div class="sm:col-span-2">
-                <label for="note-title" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Note Title *</label>
+                <label for="note-title" class="block text-xs font-bold text-slate-600 mb-1">નોંધનું શીર્ષક *</label>
                 <input
                   type="text"
                   id="note-title"
-                  placeholder="e.g. Order 500kg MS Sheet / Lathe #2 Servicing"
+                  placeholder="દા.ત. 500 કિલો લોખંડની શીટ મંગાવવી / લેથ મશીન સર્વિસ"
                   required
                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-medium"
                 />
               </div>
               <div>
-                <label for="note-category" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Category</label>
+                <label for="note-category" class="block text-xs font-bold text-slate-600 mb-1">વિભાગ / કેટેગરી</label>
                 <select
                   id="note-category"
                   class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold text-slate-800"
                 >
-                  <option value="Production">Production</option>
-                  <option value="Material/Stock">Material / Stock</option>
-                  <option value="Maintenance">Maintenance</option>
-                  <option value="General">General</option>
+                  <option value="ઉત્પાદન">ઉત્પાદન</option>
+                  <option value="માલ / સ્ટોક">માલ / સ્ટોક</option>
+                  <option value="મશીન રિપેરિંગ">મશીન રિપેરિંગ</option>
+                  <option value="સામાન્ય નોંધ">સામાન્ય નોંધ</option>
                 </select>
               </div>
             </div>
 
             <div>
-              <label for="note-content" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1">Details / Remarks *</label>
+              <label for="note-content" class="block text-xs font-bold text-slate-600 mb-1">વિગતવાર નોંધ *</label>
               <textarea
                 id="note-content"
                 rows="3"
-                placeholder="Write quantities, supplier details, shift notes, or instructions..."
+                placeholder="માલનો જથ્થો, વેપારીનું નામ, કામની સૂચના વગેરે અહીં લખો..."
                 required
                 class="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
               ></textarea>
@@ -523,9 +770,9 @@
               <button
                 type="submit"
                 id="note-submit-btn"
-                class="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm uppercase tracking-wider shadow-xs transition cursor-pointer"
+                class="px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm tracking-wide shadow-xs transition cursor-pointer"
               >
-                Save Note
+                નોંધ સાચવો
               </button>
             </div>
           </form>
@@ -541,18 +788,18 @@
             <input
               type="text"
               id="note-search-input"
-              placeholder="Search notes by title or keyword..."
+              placeholder="નોંધ શોધો (શીર્ષક અથવા શબ્દ લખો)..."
               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm"
             />
           </div>
 
           <!-- Category Filter Pills -->
           <div id="note-category-filters" class="flex flex-wrap gap-1.5">
-            <button type="button" data-cat="All" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-white">All</button>
-            <button type="button" data-cat="Production" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Production</button>
-            <button type="button" data-cat="Material/Stock" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Material/Stock</button>
-            <button type="button" data-cat="Maintenance" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">Maintenance</button>
-            <button type="button" data-cat="General" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">General</button>
+            <button type="button" data-cat="All" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-amber-400">બધી નોંધ</button>
+            <button type="button" data-cat="ઉત્પાદન" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">ઉત્પાદન</button>
+            <button type="button" data-cat="માલ / સ્ટોક" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">માલ / સ્ટોક</button>
+            <button type="button" data-cat="મશીન રિપેરિંગ" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">મશીન રિપેરિંગ</button>
+            <button type="button" data-cat="સામાન્ય નોંધ" class="cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200">સામાન્ય નોંધ</button>
           </div>
         </div>
 
@@ -561,33 +808,225 @@
           <!-- Populated dynamically via JS -->
         </div>
       </section>
+
+      <!-- ================================================================= -->
+      <!-- PAGE E: SAVED RECORDS, LOGIN LOGS & ADMIN FULL EDIT/DELETE        -->
+      <!-- ================================================================= -->
+      <section id="page-records" class="hidden space-y-6">
+        <!-- Header & Backup / Restore Controls -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-900 text-xs font-extrabold mb-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-600"></span> બધા રેકોર્ડ્સ ઓટોમેટિક સેવ થાય છે
+              </span>
+              <h2 class="text-xl font-extrabold text-slate-900">લોગિન હિસ્ટ્રી, સેવ રેકોર્ડ્સ અને એડમિન કંટ્રોલ</h2>
+              <p class="text-sm text-slate-500 mt-0.5">
+                કોણે અને ક્યારે લોગિન કર્યું તેની વિગત, બધા કારીગરોની માહિતી Edit/Delete કરો, અને પૂરો બેકઅપ ડાઉનલોડ કરો.
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                id="export-backup-btn"
+                class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 text-xs font-extrabold shadow-xs transition cursor-pointer"
+              >
+                ⬇ પૂરો બેકઅપ ડાઉનલોડ (JSON)
+              </button>
+              <label class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer">
+                ⬆ બેકઅપ ફાઇલ અપલોડ
+                <input type="file" id="import-backup-input" accept=".json" class="hidden" />
+              </label>
+              <button
+                type="button"
+                id="clear-all-records-btn"
+                class="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-extrabold shadow-xs transition cursor-pointer"
+              >
+                બધો ડેટા ડિલીટ કરો
+              </button>
+            </div>
+          </div>
+
+          <!-- Saved Record Counters -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-5 border-t border-slate-200">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <span class="text-xs font-bold text-slate-500">હાલ લોગિન યુઝર</span>
+              <p id="rec-current-user" class="text-base font-extrabold text-emerald-700 mt-1">admin</p>
+              <span id="rec-last-saved" class="text-[11px] text-slate-500">ઓટો-સેવ ચાલુ (કોઈ ડેટા ડિલીટ થશે નહીં)</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <span class="text-xs font-bold text-slate-500">કુલ સેવ કારીગરો</span>
+              <p id="rec-workers-count" class="text-xl font-extrabold text-slate-900 mt-1">0</p>
+              <span class="text-[11px] text-slate-500">Edit / Delete ઉપલબ્ધ</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <span class="text-xs font-bold text-slate-500">કુલ હાજરી દિવસો</span>
+              <p id="rec-attendance-days" class="text-xl font-extrabold text-blue-700 mt-1">0</p>
+              <span class="text-[11px] text-slate-500">સેવ થયેલ તારીખો</span>
+            </div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+              <span class="text-xs font-bold text-slate-500">કુલ લોગિન &amp; ફેરફાર નોંધ</span>
+              <p id="rec-logs-count" class="text-xl font-extrabold text-amber-700 mt-1">0</p>
+              <span class="text-[11px] text-slate-500">સુરક્ષિત ઓડિટ લોગ</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Master Worker Table with Full Admin Edit & Delete -->
+        <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-200">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">બધા કારીગરોની સેવ માહિતી (એડમિન Edit / Delete)</h3>
+              <p class="text-xs text-slate-500">અહીંથી કોઈપણ કારીગરનો પગાર, ઓવરટાઇમ દર, નામ સુધારી અથવા ડિલીટ કરી શકો છો.</p>
+            </div>
+            <button
+              type="button"
+              data-jump="attendance"
+              class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer self-start sm:self-auto"
+            >
+              + નવો કારીગર ઉમેરો
+            </button>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-900 text-white text-xs">
+                  <th class="py-3 px-3 rounded-tl-xl">#</th>
+                  <th class="py-3 px-3">કારીગરનું નામ</th>
+                  <th class="py-3 px-3">વિભાગ</th>
+                  <th class="py-3 px-3">મોબાઇલ</th>
+                  <th class="py-3 px-3">રોજનો પગાર (8-5)</th>
+                  <th class="py-3 px-3">ઓવરટાઇમ દર</th>
+                  <th class="py-3 px-3">કુલ હાજર દિવસ</th>
+                  <th class="py-3 px-3">સેવ કરનાર</th>
+                  <th class="py-3 px-3 text-right rounded-tr-xl">એડમિન એક્શન</th>
+                </tr>
+              </thead>
+              <tbody id="master-workers-tbody" class="divide-y divide-slate-200">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Two Columns: Login History & Saved Attendance Dates -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Login & Activity History Log -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+              <div>
+                <h3 class="text-base font-extrabold text-slate-900">કોણે લોગિન કર્યું &amp; ફેરફાર હિસ્ટ્રી</h3>
+                <p class="text-xs text-slate-500">દરેક લોગિન, લોગઆઉટ અને ડેટા ફેરફારનો સમય</p>
+              </div>
+              <button
+                type="button"
+                id="clear-logs-btn"
+                class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold cursor-pointer"
+              >
+                લોગ સાફ કરો
+              </button>
+            </div>
+            <div id="activity-logs-list" class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Saved Daily Attendance Records List (View / Edit / Delete Date) -->
+          <div class="bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <div class="mb-4 pb-3 border-b border-slate-200">
+              <h3 class="text-base font-extrabold text-slate-900">સેવ થયેલ તારીખ મુજબ હાજરી રેકોર્ડ્સ</h3>
+              <p class="text-xs text-slate-500">કોઈપણ તારીખની હાજરી ખોલીને સુધારો (Edit) અથવા ડિલીટ કરો</p>
+            </div>
+            <div id="saved-dates-list" class="space-y-2.5 max-h-96 overflow-y-auto pr-1">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-700 z-30 grid grid-cols-3 shadow-2xl" aria-label="Mobile Navigation">
-      <button data-nav="dashboard" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <nav class="md:hidden fixed bottom-0 inset-x-0 bg-slate-900 border-t border-slate-700 z-30 grid grid-cols-5 shadow-2xl" aria-label="મોબાઇલ મેનુ">
+      <button data-nav="dashboard" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
         </svg>
-        <span>Overview</span>
+        <span>ડેશબોર્ડ</span>
       </button>
-      <button data-nav="attendance" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+      <button data-nav="attendance" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3 3 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
         </svg>
-        <span>Attendance</span>
+        <span>હાજરી</span>
       </button>
-      <button data-nav="notes" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer">
-        <svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+      <button data-nav="monthly" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
         </svg>
-        <span>Notes</span>
+        <span>માસિક PDF</span>
+      </button>
+      <button data-nav="notes" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125" />
+        </svg>
+        <span>નોંધ</span>
+      </button>
+      <button data-nav="records" class="mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[10px] font-bold transition cursor-pointer">
+        <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125" />
+        </svg>
+        <span>રેકોર્ડ્સ</span>
       </button>
     </nav>
   </div>
 
   <!-- ===================================================================== -->
-  <!-- APPLICATION JAVASCRIPT (State, LocalStorage, UI Rendering)            -->
+  <!-- PRINT / PDF PREVIEW MODAL (પ્રિન્ટ પ્રિવ્યૂ અને PDF સેવ મોડલ)         -->
+  <!-- ===================================================================== -->
+  <div id="pdf-preview-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/80 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[94vh] flex flex-col overflow-hidden">
+      <div class="bg-slate-900 text-white px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div>
+          <h3 id="modal-pdf-title" class="text-sm sm:text-base font-extrabold text-amber-400">કારીગર માસિક પગાર રિપોર્ટ પ્રિવ્યૂ</h3>
+          <p class="text-xs text-slate-300">આ A4 સ્લિપ સીધી PDF તરીકે ડાઉનલોડ કરો અથવા પ્રિન્ટ કરો.</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="modal-download-pdf-btn"
+            class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer"
+          >
+            PDF ડાઉનલોડ કરો
+          </button>
+          <button
+            type="button"
+            id="modal-print-btn"
+            class="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-extrabold cursor-pointer"
+          >
+            પ્રિન્ટ / Save PDF
+          </button>
+          <button
+            type="button"
+            id="modal-close-pdf-btn"
+            class="px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold cursor-pointer"
+          >
+            બંધ કરો ✕
+          </button>
+        </div>
+      </div>
+      <div class="p-4 sm:p-6 overflow-y-auto bg-slate-200 flex-1">
+        <div id="print-preview-area" class="bg-white mx-auto shadow-lg max-w-[794px]"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Off-screen A4 Render Sandbox for Crisp Gujarati html2canvas -> jsPDF -->
+  <div id="pdf-offscreen-sandbox" style="position: fixed; left: -12000px; top: 0; width: 794px; background: #ffffff; z-index: -1;"></div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION JAVASCRIPT (State, LocalStorage, Wage Calculation, UI)    -->
   <!-- ===================================================================== -->
   <script>
     (function () {
@@ -600,10 +1039,13 @@
       const ADMIN_PASS = 'admin@123';
 
       const STORAGE_KEYS = {
-        AUTH: 'cp_karkhano_auth_v1',
-        WORKERS: 'cp_karkhano_workers_v1',
-        ATTENDANCE: 'cp_karkhano_attendance_v1',
-        NOTES: 'cp_karkhano_notes_v1',
+        AUTH: 'cp_karkhano_gu_auth_v2',
+        CURRENT_USER: 'cp_karkhano_gu_user_v2',
+        WORKERS: 'cp_karkhano_gu_workers_v2',
+        ATTENDANCE: 'cp_karkhano_gu_attendance_v2',
+        NOTES: 'cp_karkhano_gu_notes_v2',
+        LOGS: 'cp_karkhano_gu_logs_v2',
+        LAST_SAVED: 'cp_karkhano_gu_last_saved_v2',
       };
 
       // Helper: Returns today's date in YYYY-MM-DD local timezone
@@ -615,21 +1057,66 @@
         return `${year}-${month}-${day}`;
       }
 
-      // Helper: Format YYYY-MM-DD into readable date string
-      function formatReadableDate(isoDate) {
+      // Helper: Returns current month in YYYY-MM local timezone
+      function getCurrentMonthISO() {
+        return getTodayISO().slice(0, 7);
+      }
+
+      // Helper: Format YYYY-MM into Gujarati Month + Year label
+      function formatGujaratiMonthYear(monthISO) {
+        if (!monthISO || !monthISO.includes('-')) return monthISO;
+        const [yStr, mStr] = monthISO.split('-');
+        const guMonths = [
+          'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
+          'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર'
+        ];
+        const mIdx = Math.max(0, Math.min(11, Number(mStr) - 1));
+        return `${guMonths[mIdx]} ${yStr}`;
+      }
+
+      // Helper: Get Gujarati weekday name for a Date object
+      function getGujaratiWeekday(dateObj) {
+        const days = ['રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર'];
+        return days[dateObj.getDay()] || '';
+      }
+
+      // Helper: Format YYYY-MM-DD into Gujarati date string
+      function formatGujaratiDate(isoDate) {
         if (!isoDate) return '';
         const parts = isoDate.split('-');
         if (parts.length !== 3) return isoDate;
         const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-        return d.toLocaleDateString('en-IN', {
-          weekday: 'short',
-          day: '2-digit',
-          month: 'short',
-          year: 'numeric',
-        });
+        try {
+          return d.toLocaleDateString('gu-IN', {
+            weekday: 'short',
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          });
+        } catch (e) {
+          return isoDate;
+        }
       }
 
-      // Helper: Escape HTML to prevent XSS from user inputs
+      // Helper: Get current Gujarati timestamp
+      function getGujaratiTimestamp() {
+        try {
+          return new Date().toLocaleString('gu-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          });
+        } catch (e) {
+          return new Date().toLocaleString();
+        }
+      }
+
+      // Helper: Format currency cleanly in ₹
+      function formatRupees(amount) {
+        const num = Math.round((Number(amount) || 0) * 100) / 100;
+        return '₹' + num.toLocaleString('en-IN');
+      }
+
+      // Helper: Escape HTML to prevent XSS
       function escapeHTML(str) {
         return String(str)
           .replace(/&/g, '&amp;')
@@ -644,30 +1131,59 @@
       // -------------------------------------------------------------------
       let state = {
         isAuthenticated: false,
+        currentUser: 'admin',
         activeTab: 'dashboard',
         selectedDate: getTodayISO(),
+        selectedMonth: getCurrentMonthISO(),
         noteFilterCategory: 'All',
         noteSearchQuery: '',
         workers: [],
-        // attendance structure: { "YYYY-MM-DD": { "workerId": "P" | "H" | "A" } }
+        // attendance structure: { "YYYY-MM-DD": { "workerId": { status: "P"|"H"|"A"|"", otHours: number } } }
         attendance: {},
         notes: [],
+        logs: [],
+        lastSavedAt: '',
       };
+
+      function recordAuditLog(actionType, detailText) {
+        const entry = {
+          id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+          user: state.currentUser || ADMIN_ID,
+          action: actionType,
+          detail: detailText,
+          timestamp: getGujaratiTimestamp(),
+        };
+        state.logs.unshift(entry);
+        if (state.logs.length > 150) {
+          state.logs = state.logs.slice(0, 150);
+        }
+        state.lastSavedAt = entry.timestamp;
+        try {
+          localStorage.setItem(STORAGE_KEYS.LOGS, JSON.stringify(state.logs));
+          localStorage.setItem(STORAGE_KEYS.LAST_SAVED, state.lastSavedAt);
+        } catch (e) {
+          console.error('Error saving logs:', e);
+        }
+      }
 
       function loadState() {
         try {
           state.isAuthenticated = localStorage.getItem(STORAGE_KEYS.AUTH) === 'true';
+          state.currentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || ADMIN_ID;
+          state.lastSavedAt = localStorage.getItem(STORAGE_KEYS.LAST_SAVED) || getGujaratiTimestamp();
+
+          const savedLogs = localStorage.getItem(STORAGE_KEYS.LOGS);
+          state.logs = savedLogs ? JSON.parse(savedLogs) : [];
 
           const savedWorkers = localStorage.getItem(STORAGE_KEYS.WORKERS);
           if (savedWorkers) {
             state.workers = JSON.parse(savedWorkers);
           } else {
-            // Seed starter workers on first launch so user sees realistic layout immediately
+            // Seed 3 realistic Gujarati workers with different daily & overtime rates
             state.workers = [
-              { id: 'w_101', name: 'Rameshbhai Patel', role: 'Karigar', phone: '98250 11223' },
-              { id: 'w_102', name: 'Suresh Kumar', role: 'Machine Operator', phone: '98791 44556' },
-              { id: 'w_103', name: 'Mahesh Solanki', role: 'Welder / Fitter', phone: '99092 77889' },
-              { id: 'w_104', name: 'Dineshbhai Chauhan', role: 'Helper', phone: '₹550/day' },
+              { id: 'w_101', name: 'રમેશભાઈ પટેલ', role: 'મશીન ઓપરેટર', phone: '98250 11223', dailyRate: 800, otRate: 100 },
+              { id: 'w_102', name: 'સુરેશભાઈ પ્રજાપતિ', role: 'કારીગર', phone: '98791 44556', dailyRate: 600, otRate: 75 },
+              { id: 'w_103', name: 'દિનેશભાઈ ચૌહાણ', role: 'હેલ્પર', phone: '99092 77889', dailyRate: 450, otRate: 60 },
             ];
             localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
           }
@@ -676,12 +1192,11 @@
           if (savedAttendance) {
             state.attendance = JSON.parse(savedAttendance);
           } else {
-            // Seed sample today attendance
             const today = getTodayISO();
             state.attendance[today] = {
-              w_101: 'P',
-              w_102: 'P',
-              w_103: 'H',
+              w_101: { status: 'P', otHours: 2 },
+              w_102: { status: 'P', otHours: 1.5 },
+              w_103: { status: 'H', otHours: 0 },
             };
             localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
           }
@@ -693,17 +1208,17 @@
             state.notes = [
               {
                 id: 'n_1',
-                title: 'Batch #42 Cutting & Bending Target',
-                category: 'Production',
-                content: 'Complete 250 units of Century Heavy Hinges before 6:00 PM shift end. Check quality gauge every 50 pieces.',
-                updatedAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+                title: 'આજનો ઉત્પાદન ટાર્ગેટ (બેચ #42)',
+                category: 'ઉત્પાદન',
+                content: 'સાંજે 5:00 વાગ્યા સુધીમાં સેન્ચ્યુરી હેવી મિજાગરાના 250 નંગ તૈયાર કરવાના છે. દરેક 50 નંગ પછી માપ ચેક કરવું.',
+                updatedAt: getGujaratiTimestamp(),
               },
               {
                 id: 'n_2',
-                title: 'Raw Material Order — CRC Coil',
-                category: 'Material/Stock',
-                content: 'Order 2 Ton 16-Gauge CRC Sheet from Ambica Steel Traders for Thursday morning delivery.',
-                updatedAt: new Date().toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }),
+                title: 'કાચા માલનો ઓર્ડર — CRC શીટ',
+                category: 'માલ / સ્ટોક',
+                content: 'અંબિકા સ્ટીલ ટ્રેડર્સ પાસેથી 2 ટન 16-ગેજ CRC શીટ ગુરુવારે સવારે 9 વાગ્યે મંગાવવાની છે.',
+                updatedAt: getGujaratiTimestamp(),
               },
             ];
             localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
@@ -713,28 +1228,58 @@
         }
       }
 
-      function saveWorkers() {
+      function saveWorkers(logDetail) {
         try {
           localStorage.setItem(STORAGE_KEYS.WORKERS, JSON.stringify(state.workers));
+          if (logDetail) recordAuditLog('કારીગર ફેરફાર', logDetail);
         } catch (e) {
-          showToast('Unable to save workers to browser storage.', 'error');
+          showToast('કારીગરની માહિતી સેવ થઈ શકી નથી.', 'error');
         }
       }
 
-      function saveAttendance() {
+      function saveAttendance(logDetail) {
         try {
           localStorage.setItem(STORAGE_KEYS.ATTENDANCE, JSON.stringify(state.attendance));
+          if (logDetail) recordAuditLog('હાજરી સેવ', logDetail);
         } catch (e) {
-          showToast('Unable to save attendance to browser storage.', 'error');
+          showToast('હાજરી સેવ થઈ શકી નથી.', 'error');
         }
       }
 
-      function saveNotes() {
+      function saveNotes(logDetail) {
         try {
           localStorage.setItem(STORAGE_KEYS.NOTES, JSON.stringify(state.notes));
+          if (logDetail) recordAuditLog('નોંધ સેવ', logDetail);
         } catch (e) {
-          showToast('Unable to save notes to browser storage.', 'error');
+          showToast('નોંધ સેવ થઈ શકી નથી.', 'error');
         }
+      }
+
+      // Helper: Normalize attendance entry for a worker on a given date
+      function getWorkerDayRecord(dateISO, workerId) {
+        const dayMap = state.attendance[dateISO] || {};
+        const entry = dayMap[workerId];
+        if (!entry) return { status: '', otHours: 0 };
+        if (typeof entry === 'string') return { status: entry, otHours: 0 };
+        return {
+          status: entry.status || '',
+          otHours: Math.max(0, Number(entry.otHours) || 0),
+        };
+      }
+
+      // Helper: Calculate shift pay, OT pay, and total pay for a worker on a date
+      function calculateWorkerEarnings(worker, record) {
+        const dailyRate = Number(worker.dailyRate) || 0;
+        const otRate = Number(worker.otRate) || 0;
+
+        let shiftPay = 0;
+        if (record.status === 'P') shiftPay = dailyRate;
+        else if (record.status === 'H') shiftPay = dailyRate * 0.5;
+
+        const otPay = record.otHours * otRate;
+        const totalPay = shiftPay + otPay;
+
+        return { shiftPay, otPay, totalPay };
       }
 
       // -------------------------------------------------------------------
@@ -751,7 +1296,7 @@
             ? 'bg-slate-900 border-amber-500 text-white'
             : 'bg-emerald-900 border-emerald-400 text-white';
 
-        toast.className = `pointer-events-auto border-l-4 ${colors} px-4 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-3 transition-all duration-300 opacity-0 translate-y-2`;
+        toast.className = `pointer-events-auto border-l-4 ${colors} px-4 py-3 rounded-xl shadow-xl text-xs sm:text-sm font-bold flex items-center justify-between gap-3 transition-all duration-300 opacity-0 translate-y-2`;
         toast.innerHTML = `<span>${escapeHTML(message)}</span>`;
 
         container.appendChild(toast);
@@ -762,7 +1307,7 @@
         setTimeout(() => {
           toast.classList.add('opacity-0', 'translate-y-2');
           setTimeout(() => toast.remove(), 300);
-        }, 2600);
+        }, 2800);
       }
 
       function showConfirmModal(title, message, onConfirm) {
@@ -802,6 +1347,8 @@
           loginView.classList.add('hidden');
           appShell.classList.remove('hidden');
           appShell.classList.add('flex');
+          const userLabel = document.getElementById('active-user-label');
+          if (userLabel) userLabel.textContent = `લોગિન: ${state.currentUser}`;
           switchTab(state.activeTab);
         } else {
           appShell.classList.add('hidden');
@@ -821,10 +1368,14 @@
         const logoutBtn = document.getElementById('logout-btn');
 
         quickFillBtn.addEventListener('click', () => {
+          const opInput = document.getElementById('login-operator-name');
+          if (opInput && !opInput.value.trim()) {
+            opInput.value = 'મુખ્ય એડમિન';
+          }
           loginIdInput.value = ADMIN_ID;
           loginPassInput.value = ADMIN_PASS;
           loginError.classList.add('hidden');
-          showToast('Admin credentials filled', 'info');
+          showToast('એડમિન ID અને પાસવર્ડ ભરાઈ ગયા છે', 'info');
         });
 
         togglePassBtn.addEventListener('click', () => {
@@ -834,27 +1385,40 @@
 
         loginForm.addEventListener('submit', (e) => {
           e.preventDefault();
+          const operatorName = (document.getElementById('login-operator-name')?.value || '').trim();
           const enteredId = loginIdInput.value.trim();
           const enteredPass = loginPassInput.value;
 
           if (enteredId === ADMIN_ID && enteredPass === ADMIN_PASS) {
             loginError.classList.add('hidden');
+            // Reload latest saved records from storage so no previous user's data is ever overwritten or removed
+            loadState();
+
+            const activeDisplayUser = operatorName ? `${operatorName} (${enteredId})` : enteredId;
             state.isAuthenticated = true;
+            state.currentUser = activeDisplayUser;
             localStorage.setItem(STORAGE_KEYS.AUTH, 'true');
+            localStorage.setItem(STORAGE_KEYS.CURRENT_USER, activeDisplayUser);
+            recordAuditLog('લોગિન', `યુઝર "${activeDisplayUser}" એ લોગિન કર્યું. બધા જૂના સેવ રેકોર્ડ્સ સુરક્ષિત છે.`);
             loginForm.reset();
             updateAuthUI();
-            showToast('Welcome to Century Product Karkhano!');
+            showToast(`સ્વાગત છે ${activeDisplayUser}! બધા જૂના રેકોર્ડ્સ સુરક્ષિત છે.`);
           } else {
-            loginErrorText.textContent = 'Invalid ID or Password. Use ID: admin and Password: admin@123';
+            loginErrorText.textContent = 'ખોટું ID અથવા પાસવર્ડ. કૃપા કરીને ID: admin અને પાસવર્ડ: admin@123 લખો.';
             loginError.classList.remove('hidden');
           }
         });
 
         logoutBtn.addEventListener('click', () => {
+          // Ensure all current records are flushed safely before logout without removing anything
+          saveWorkers();
+          saveAttendance();
+          saveNotes();
+          recordAuditLog('લોગઆઉટ', `યુઝર "${state.currentUser}" એ લોગઆઉટ કર્યું (બધા રેકોર્ડ્સ સેવ રાખેલ છે).`);
           state.isAuthenticated = false;
           localStorage.removeItem(STORAGE_KEYS.AUTH);
           updateAuthUI();
-          showToast('Logged out safely.', 'info');
+          showToast('સુરક્ષિત રીતે લોગઆઉટ થઈ ગયું છે. બધા રેકોર્ડ્સ સેવ છે.', 'info');
         });
       }
 
@@ -867,7 +1431,9 @@
         const pages = {
           dashboard: document.getElementById('page-dashboard'),
           attendance: document.getElementById('page-attendance'),
+          monthly: document.getElementById('page-monthly'),
           notes: document.getElementById('page-notes'),
+          records: document.getElementById('page-records'),
         };
 
         Object.keys(pages).forEach((key) => {
@@ -892,16 +1458,17 @@
         document.querySelectorAll('.mobile-nav-btn').forEach((btn) => {
           const isMatch = btn.dataset.nav === tabName;
           if (isMatch) {
-            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer text-amber-400 bg-slate-800/80 border-t-2 border-amber-400';
+            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[11px] font-bold transition cursor-pointer text-amber-400 bg-slate-800/80 border-t-2 border-amber-400';
           } else {
-            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-xs font-bold transition cursor-pointer text-slate-400 hover:text-white';
+            btn.className = 'mobile-nav-btn flex flex-col items-center justify-center py-2.5 text-[11px] font-bold transition cursor-pointer text-slate-400 hover:text-white';
           }
         });
 
-        // Re-render target view
         if (tabName === 'dashboard') renderDashboard();
         if (tabName === 'attendance') renderAttendancePage();
+        if (tabName === 'monthly') renderMonthlyPage();
         if (tabName === 'notes') renderNotesPage();
+        if (tabName === 'records') renderRecordsPage();
       }
 
       function setupNavigationEvents() {
@@ -915,56 +1482,609 @@
       }
 
       // -------------------------------------------------------------------
-      // 6. DASHBOARD OVERVIEW RENDERING
+      // 8. MONTHLY SUMMARY & INDIVIDUAL WORKER PDF REPORTS
+      // -------------------------------------------------------------------
+      function computeWorkerMonthlyReport(worker, monthISO) {
+        const [yearStr, monthStr] = monthISO.split('-');
+        const year = Number(yearStr);
+        const month = Number(monthStr); // 1 to 12
+        const daysInMonth = new Date(year, month, 0).getDate();
+
+        let presentDays = 0;
+        let halfDays = 0;
+        let absentDays = 0;
+        let unmarkedDays = 0;
+        let regularHours = 0;
+        let totalOtHours = 0;
+        let totalRegularPay = 0;
+        let totalOtPay = 0;
+        let grandTotalPay = 0;
+
+        const dayRows = [];
+
+        for (let d = 1; d <= daysInMonth; d++) {
+          const dayPadded = String(d).padStart(2, '0');
+          const dateISO = `${yearStr}-${monthStr}-${dayPadded}`;
+          const dateObj = new Date(year, month - 1, d);
+          const weekdayGu = getGujaratiWeekday(dateObj);
+
+          const rec = getWorkerDayRecord(dateISO, worker.id);
+          const earnings = calculateWorkerEarnings(worker, rec);
+
+          let statusLabelGu = 'નોંધ નથી';
+          let regHrsDay = 0;
+
+          if (rec.status === 'P') {
+            presentDays++;
+            regHrsDay = 8;
+            statusLabelGu = 'હાજર (8:00 થી 5:00)';
+          } else if (rec.status === 'H') {
+            halfDays++;
+            regHrsDay = 4;
+            statusLabelGu = 'અડધો દિવસ';
+          } else if (rec.status === 'A') {
+            absentDays++;
+            statusLabelGu = 'ગેરહાજર';
+          } else {
+            unmarkedDays++;
+          }
+
+          regularHours += regHrsDay;
+          totalOtHours += rec.otHours;
+          totalRegularPay += earnings.shiftPay;
+          totalOtPay += earnings.otPay;
+          grandTotalPay += earnings.totalPay;
+
+          dayRows.push({
+            dayNumber: d,
+            dateISO,
+            displayDate: `${dayPadded}/${monthStr}/${yearStr}`,
+            weekdayGu,
+            status: rec.status,
+            statusLabelGu,
+            regHrsDay,
+            otHours: rec.otHours,
+            shiftPay: earnings.shiftPay,
+            otPay: earnings.otPay,
+            dayTotal: earnings.totalPay,
+          });
+        }
+
+        return {
+          worker,
+          monthISO,
+          monthLabelGu: formatGujaratiMonthYear(monthISO),
+          daysInMonth,
+          presentDays,
+          halfDays,
+          absentDays,
+          unmarkedDays,
+          effectiveDays: presentDays + halfDays * 0.5,
+          regularHours,
+          totalOtHours,
+          totalRegularPay,
+          totalOtPay,
+          grandTotalPay,
+          dayRows,
+        };
+      }
+
+      function buildWorkerA4ReportHTML(report) {
+        const w = report.worker;
+        const rowsHTML = report.dayRows
+          .map((row) => {
+            let statusColor = '#64748b';
+            let rowBg = row.dayNumber % 2 === 0 ? '#f8fafc' : '#ffffff';
+            if (row.status === 'P') {
+              statusColor = '#047857';
+              rowBg = '#ecfdf5';
+            } else if (row.status === 'H') {
+              statusColor = '#b45309';
+              rowBg = '#fffbeb';
+            } else if (row.status === 'A') {
+              statusColor = '#b91c1c';
+              rowBg = '#fef2f2';
+            }
+
+            return `
+              <tr style="background-color: ${rowBg}; border-bottom: 1px solid #cbd5e1;">
+                <td style="padding: 5px 8px; text-align: center; font-weight: 700; color: #0f172a;">${row.displayDate}</td>
+                <td style="padding: 5px 8px; text-align: center; color: #334155;">${row.weekdayGu}</td>
+                <td style="padding: 5px 8px; text-align: center; font-weight: 700; color: ${statusColor};">${row.statusLabelGu}</td>
+                <td style="padding: 5px 8px; text-align: center; font-weight: 600; color: #0f172a;">${row.otHours > 0 ? row.otHours + ' કલાક' : '-'}</td>
+                <td style="padding: 5px 8px; text-align: right; color: #1e293b;">${formatRupees(row.shiftPay)}</td>
+                <td style="padding: 5px 8px; text-align: right; color: #92400e;">${row.otPay > 0 ? formatRupees(row.otPay) : '₹0'}</td>
+                <td style="padding: 5px 8px; text-align: right; font-weight: 800; color: #1d4ed8;">${formatRupees(row.dayTotal)}</td>
+              </tr>
+            `;
+          })
+          .join('');
+
+        return `
+          <div style="font-family: 'Noto Sans Gujarati', 'Inter', sans-serif; width: 794px; padding: 28px 32px; background: #ffffff; color: #0f172a; box-sizing: border-box;">
+            <!-- Company Header with Century Karkhano Emblem -->
+            <div style="border-bottom: 3px solid #f59e0b; padding-bottom: 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 58px; height: 58px; background: #0f172a; border-radius: 12px; padding: 6px; display: flex; align-items: center; justify-content: center; border: 1.5px solid #d97706;">
+                  <svg viewBox="0 0 120 120" width="46" height="46">
+                    <path d="M 60 16 A 44 44 0 1 0 60 104 L 60 88 A 28 28 0 1 1 60 32 Z" fill="#f59e0b" />
+                    <path d="M 62 10 L 68 10 L 70 18 A 42 42 0 0 1 82 23 L 89 18 L 94 23 L 89 30 A 42 42 0 0 1 96 42 L 104 44 L 104 51 L 96 53 A 42 42 0 0 1 96 67 L 104 69 L 104 76 L 96 78 A 42 42 0 0 1 89 90 L 94 97 L 89 102 L 82 97 A 42 42 0 0 1 70 102 L 68 110 L 62 110 L 62 94 A 34 34 0 0 0 62 26 Z" fill="#d97706" />
+                    <path d="M 62 29 A 31 31 0 0 1 62 91" fill="none" stroke="#cbd5e1" stroke-width="3.5" stroke-linecap="round" />
+                    <line x1="60" y1="60" x2="60" y2="38" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+                    <line x1="60" y1="60" x2="44" y2="70" stroke="#fbbf24" stroke-width="4" stroke-linecap="round" />
+                    <circle cx="60" cy="60" r="4.5" fill="#fbbf24" />
+                  </svg>
+                </div>
+                <div>
+                  <div style="font-size: 11px; font-weight: 800; color: #b45309; letter-spacing: 0.5px;">CENTURY KARKHANO &bull; પગાર અને હાજરી પત્રક</div>
+                  <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 2px 0;">સેન્ચ્યુરી પ્રોડક્ટ — સેન્ચ્યુરી કારખાનું</h1>
+                  <div style="font-size: 12px; color: #475569;">શિફ્ટ સમય: સવારે 8:00 થી સાંજે 5:00 &bull; વ્યક્તિગત માસિક કામનો અહેવાલ</div>
+                </div>
+              </div>
+              <div style="text-align: right; background: #0f172a; color: #ffffff; padding: 10px 16px; border-radius: 10px;">
+                <div style="font-size: 11px; color: #fbbf24; font-weight: 700;">રિપોર્ટ મહિનો</div>
+                <div style="font-size: 17px; font-weight: 800; margin-top: 2px;">${escapeHTML(report.monthLabelGu)}</div>
+              </div>
+            </div>
+
+            <!-- Worker Profile Box -->
+            <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 11px; color: #64748b; font-weight: 700;">કારીગરનું નામ</div>
+                <div style="font-size: 17px; font-weight: 800; color: #0f172a;">${escapeHTML(w.name)}</div>
+                <div style="font-size: 12px; color: #334155; margin-top: 2px;">વિભાગ: <strong>${escapeHTML(w.role)}</strong> ${w.phone ? '&bull; મોબાઇલ: <strong>' + escapeHTML(w.phone) + '</strong>' : ''}</div>
+              </div>
+              <div style="display: flex; gap: 14px; align-items: center;">
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: #1e40af; font-weight: 700;">રોજનો પગાર (8-5)</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #1d4ed8;">${formatRupees(w.dailyRate)} / દિવસ</div>
+                </div>
+                <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 8px; text-align: center;">
+                  <div style="font-size: 10px; color: #92400e; font-weight: 700;">ઓવરટાઇમ દર</div>
+                  <div style="font-size: 15px; font-weight: 800; color: #b45309;">${formatRupees(w.otRate)} / કલાક</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Monthly Summary Strip -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px;">
+              <tr>
+                <td style="border: 1px solid #cbd5e1; background: #ecfdf5; padding: 8px 10px; text-align: center; width: 16%;">
+                  <div style="color: #065f46; font-weight: 700; font-size: 11px;">હાજર (8-5)</div>
+                  <div style="font-size: 16px; font-weight: 800; color: #047857;">${report.presentDays} દિવસ</div>
+                </td>
+                <td style="border: 1px solid #cbd5e1; background: #fffbeb; padding: 8px 10px; text-align: center; width: 16%;">
+                  <div style="color: #92400e; font-weight: 700; font-size: 11px;">અડધો દિવસ</div>
+                  <div style="font-size: 16px; font-weight: 800; color: #b45309;">${report.halfDays} દિવસ</div>
+                </td>
+                <td style="border: 1px solid #cbd5e1; background: #fef2f2; padding: 8px 10px; text-align: center; width: 16%;">
+                  <div style="color: #991b1b; font-weight: 700; font-size: 11px;">ગેરહાજર</div>
+                  <div style="font-size: 16px; font-weight: 800; color: #b91c1c;">${report.absentDays} દિવસ</div>
+                </td>
+                <td style="border: 1px solid #cbd5e1; background: #f1f5f9; padding: 8px 10px; text-align: center; width: 17%;">
+                  <div style="color: #334155; font-weight: 700; font-size: 11px;">કુલ ઓવરટાઇમ</div>
+                  <div style="font-size: 16px; font-weight: 800; color: #0f172a;">${report.totalOtHours} કલાક</div>
+                </td>
+                <td style="border: 1px solid #cbd5e1; background: #f8fafc; padding: 8px 10px; text-align: right; width: 17%;">
+                  <div style="color: #475569; font-weight: 700; font-size: 10px;">શિફ્ટ + OT પગાર</div>
+                  <div style="font-size: 12px; font-weight: 800; color: #0f172a;">${formatRupees(report.totalRegularPay)} + ${formatRupees(report.totalOtPay)}</div>
+                </td>
+                <td style="border: 1.5px solid #1d4ed8; background: #dbeafe; padding: 8px 12px; text-align: right; width: 18%;">
+                  <div style="color: #1e40af; font-weight: 800; font-size: 11px;">કુલ પગાર ₹</div>
+                  <div style="font-size: 18px; font-weight: 800; color: #1d4ed8;">${formatRupees(report.grandTotalPay)}</div>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Day-by-Day Attendance & Wage Table -->
+            <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #94a3b8;">
+              <thead>
+                <tr style="background: #0f172a; color: #ffffff;">
+                  <th style="padding: 7px 8px; text-align: center;">તારીખ</th>
+                  <th style="padding: 7px 8px; text-align: center;">વાર</th>
+                  <th style="padding: 7px 8px; text-align: center;">હાજરી સ્થિતિ (8 થી 5)</th>
+                  <th style="padding: 7px 8px; text-align: center;">ઓવરટાઇમ</th>
+                  <th style="padding: 7px 8px; text-align: right;">શિફ્ટ પગાર</th>
+                  <th style="padding: 7px 8px; text-align: right;">OT પગાર</th>
+                  <th style="padding: 7px 8px; text-align: right;">દિવસનો કુલ ₹</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHTML}
+              </tbody>
+              <tfoot>
+                <tr style="background: #f1f5f9; border-top: 2px solid #0f172a; font-weight: 800;">
+                  <td colspan="3" style="padding: 8px 10px; text-align: left; color: #0f172a;">
+                    કુલ સરવાળો: ${report.presentDays} હાજર, ${report.halfDays} અડધો દિવસ (${report.regularHours} નિયમિત કલાક)
+                  </td>
+                  <td style="padding: 8px; text-align: center; color: #92400e;">${report.totalOtHours} કલાક</td>
+                  <td style="padding: 8px; text-align: right; color: #0f172a;">${formatRupees(report.totalRegularPay)}</td>
+                  <td style="padding: 8px; text-align: right; color: #92400e;">${formatRupees(report.totalOtPay)}</td>
+                  <td style="padding: 8px 10px; text-align: right; font-size: 14px; color: #1d4ed8;">${formatRupees(report.grandTotalPay)}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <!-- Signature Footer -->
+            <div style="margin-top: 26px; display: flex; justify-content: space-between; align-items: flex-end; font-size: 12px; color: #334155;">
+              <div>
+                <div style="font-size: 11px; color: #64748b;">તૈયાર કર્યા તારીખ: ${escapeHTML(getGujaratiTimestamp())}</div>
+                <div style="font-size: 11px; color: #64748b;">સેન્ચ્યુરી પ્રોડક્ટ — કારખાના મેનેજમેન્ટ સિસ્ટમ</div>
+              </div>
+              <div style="display: flex; gap: 50px;">
+                <div style="text-align: center;">
+                  <div style="width: 140px; border-bottom: 1px dashed #64748b; height: 28px;"></div>
+                  <div style="margin-top: 4px; font-weight: 700;">કારીગરની સહી</div>
+                </div>
+                <div style="text-align: center;">
+                  <div style="width: 140px; border-bottom: 1px dashed #64748b; height: 28px;"></div>
+                  <div style="margin-top: 4px; font-weight: 700;">એડમિન / માલિકની સહી</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      function sanitizeFilePart(str, fallback) {
+        const cleaned = String(str || '')
+          .trim()
+          .replace(/[^\p{L}\p{N}_-]+/gu, '_')
+          .replace(/^_+|_+$/g, '');
+        return cleaned || fallback;
+      }
+
+      async function generateAndSaveSingleWorkerPDF(worker, workerIndex) {
+        const report = computeWorkerMonthlyReport(worker, state.selectedMonth);
+        const sandbox = document.getElementById('pdf-offscreen-sandbox');
+        sandbox.innerHTML = buildWorkerA4ReportHTML(report);
+        const targetEl = sandbox.firstElementChild;
+
+        if (!window.html2canvas || !window.jspdf) {
+          showToast('PDF લાઇબ્રેરી લોડ થઈ નથી. પ્રિન્ટ પ્રિવ્યૂનો ઉપયોગ કરો.', 'error');
+          openWorkerPrintPreview(worker);
+          return false;
+        }
+
+        try {
+          // Ensure web fonts are ready before capturing canvas
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+          }
+
+          const canvas = await window.html2canvas(targetEl, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            logging: false,
+          });
+
+          const imgData = canvas.toDataURL('image/jpeg', 0.96);
+          const { jsPDF } = window.jspdf;
+          const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4',
+          });
+
+          const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
+          const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+          const margin = 6;
+          const usableWidth = pageWidth - margin * 2;
+          const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+          if (imgHeight <= pageHeight - margin * 2) {
+            pdf.addImage(imgData, 'JPEG', margin, margin, usableWidth, imgHeight);
+          } else {
+            // Fit proportionally onto a single clean A4 page
+            const scaleFactor = (pageHeight - margin * 2) / imgHeight;
+            const fittedWidth = usableWidth * scaleFactor;
+            const fittedHeight = imgHeight * scaleFactor;
+            const xOffset = (pageWidth - fittedWidth) / 2;
+            pdf.addImage(imgData, 'JPEG', xOffset, margin, fittedWidth, fittedHeight);
+          }
+
+          const safeName = sanitizeFilePart(worker.name, `Worker_${workerIndex + 1}`);
+          const fileName = `${workerIndex + 1}_${safeName}_${state.selectedMonth}.pdf`;
+          pdf.save(fileName);
+          return true;
+        } catch (err) {
+          console.error('PDF generation failed:', err);
+          showToast(`${worker.name} ની PDF બનાવવામાં ભૂલ આવી. પ્રિન્ટ પ્રિવ્યૂ ખોલી રહ્યા છીએ.`, 'error');
+          openWorkerPrintPreview(worker);
+          return false;
+        } finally {
+          sandbox.innerHTML = '';
+        }
+      }
+
+      let currentPreviewWorker = null;
+
+      function openWorkerPrintPreview(worker) {
+        currentPreviewWorker = worker;
+        const report = computeWorkerMonthlyReport(worker, state.selectedMonth);
+        document.getElementById('modal-pdf-title').textContent = `${worker.name} — ${report.monthLabelGu} પગાર સ્લિપ`;
+        document.getElementById('print-preview-area').innerHTML = buildWorkerA4ReportHTML(report);
+
+        const modal = document.getElementById('pdf-preview-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      function renderMonthlyPage() {
+        const monthInput = document.getElementById('monthly-month-input');
+        monthInput.value = state.selectedMonth;
+
+        const monthLabelGu = formatGujaratiMonthYear(state.selectedMonth);
+        const [yStr, mStr] = state.selectedMonth.split('-');
+        const daysInMonth = new Date(Number(yStr), Number(mStr), 0).getDate();
+
+        document.getElementById('monthly-label-display').textContent = monthLabelGu;
+        document.getElementById('monthly-days-count').textContent = `કુલ ${daysInMonth} દિવસનો મહિનો`;
+
+        let allEffectiveDays = 0;
+        let allRegHours = 0;
+        let allOtHours = 0;
+        let allOtPay = 0;
+        let allGrandTotal = 0;
+
+        const reports = state.workers.map((w) => {
+          const r = computeWorkerMonthlyReport(w, state.selectedMonth);
+          allEffectiveDays += r.effectiveDays;
+          allRegHours += r.regularHours;
+          allOtHours += r.totalOtHours;
+          allOtPay += r.totalOtPay;
+          allGrandTotal += r.grandTotalPay;
+          return r;
+        });
+
+        document.getElementById('monthly-total-days').textContent = `${allEffectiveDays} દિવસ`;
+        document.getElementById('monthly-total-reg-hours').textContent = `${allRegHours} નિયમિત કલાક (8-5)`;
+        document.getElementById('monthly-total-ot').textContent = `${allOtHours} કલાક`;
+        document.getElementById('monthly-total-ot-pay').textContent = `OT પગાર: ${formatRupees(allOtPay)}`;
+        document.getElementById('monthly-grand-total').textContent = formatRupees(allGrandTotal);
+
+        const listEl = document.getElementById('monthly-workers-list');
+        if (reports.length === 0) {
+          listEl.innerHTML = `
+            <div class="text-center py-10 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+              <p class="text-base font-bold text-slate-700">કોઈ કારીગર નોંધાયેલ નથી</p>
+              <p class="text-xs text-slate-500 mt-1">પહેલા "કારીગર હાજરી અને પગાર" પેજ પર કારીગર ઉમેરો.</p>
+            </div>
+          `;
+          return;
+        }
+
+        listEl.innerHTML = reports
+          .map((rep, idx) => {
+            const w = rep.worker;
+            return `
+              <div class="border border-slate-200 hover:border-slate-300 rounded-2xl p-4 sm:p-5 bg-slate-50/60 transition">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <!-- Worker Identity & Rates -->
+                  <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-slate-900 text-amber-400 font-extrabold text-sm flex items-center justify-center shrink-0">
+                      #${idx + 1}
+                    </div>
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="text-base font-extrabold text-slate-900">${escapeHTML(w.name)}</h4>
+                        <span class="px-2.5 py-0.5 rounded-md bg-slate-200 text-slate-800 text-xs font-bold">${escapeHTML(w.role)}</span>
+                        ${w.phone ? `<span class="text-xs text-slate-500">📞 ${escapeHTML(w.phone)}</span>` : ''}
+                      </div>
+                      <p class="text-xs text-slate-600 mt-1">
+                        દર: <strong>${formatRupees(w.dailyRate)}/દિવસ (8-5)</strong> &bull; ઓવરટાઇમ: <strong>${formatRupees(w.otRate)}/કલાક</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Monthly Breakdown Pills -->
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div class="bg-white border border-emerald-200 rounded-xl px-3 py-2">
+                      <span class="block text-[11px] font-bold text-emerald-700">હાજર / અડધો</span>
+                      <span class="text-sm font-extrabold text-emerald-800">${rep.presentDays} હાજર • ${rep.halfDays} અડધો</span>
+                      <span class="block text-[10px] text-slate-500">${rep.regularHours} નિયમિત કલાક</span>
+                    </div>
+                    <div class="bg-white border border-red-200 rounded-xl px-3 py-2">
+                      <span class="block text-[11px] font-bold text-red-700">ગેરહાજર</span>
+                      <span class="text-sm font-extrabold text-red-700">${rep.absentDays} દિવસ</span>
+                      <span class="block text-[10px] text-slate-500">બાકી: ${rep.unmarkedDays}</span>
+                    </div>
+                    <div class="bg-white border border-amber-200 rounded-xl px-3 py-2">
+                      <span class="block text-[11px] font-bold text-amber-800">ઓવરટાઇમ</span>
+                      <span class="text-sm font-extrabold text-amber-900">${rep.totalOtHours} કલાક</span>
+                      <span class="block text-[10px] text-amber-700">${formatRupees(rep.totalOtPay)}</span>
+                    </div>
+                    <div class="bg-blue-600 text-white rounded-xl px-3 py-2 shadow-xs">
+                      <span class="block text-[11px] font-bold text-blue-100">કુલ માસિક પગાર</span>
+                      <span class="text-base font-extrabold">${formatRupees(rep.grandTotalPay)}</span>
+                      <span class="block text-[10px] text-blue-200">નિયમિત ${formatRupees(rep.totalRegularPay)}</span>
+                    </div>
+                  </div>
+
+                  <!-- Individual PDF Download & Preview Actions -->
+                  <div class="flex flex-wrap sm:flex-nowrap items-center gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-200">
+                    <button
+                      type="button"
+                      data-preview-worker-pdf="${w.id}"
+                      class="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 text-xs font-extrabold transition cursor-pointer"
+                    >
+                      પ્રિવ્યૂ જુઓ
+                    </button>
+                    <button
+                      type="button"
+                      data-download-worker-pdf="${w.id}"
+                      class="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                      </svg>
+                      <span>PDF ડાઉનલોડ કરો</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+      }
+
+      function setupMonthlyEvents() {
+        const monthInput = document.getElementById('monthly-month-input');
+        const listEl = document.getElementById('monthly-workers-list');
+        const bulkDownloadBtn = document.getElementById('download-all-pdfs-btn');
+        const previewModal = document.getElementById('pdf-preview-modal');
+        const closeModalBtn = document.getElementById('modal-close-pdf-btn');
+        const modalDownloadBtn = document.getElementById('modal-download-pdf-btn');
+        const modalPrintBtn = document.getElementById('modal-print-btn');
+
+        monthInput.addEventListener('change', (e) => {
+          if (e.target.value) {
+            state.selectedMonth = e.target.value;
+            renderMonthlyPage();
+          }
+        });
+
+        listEl.addEventListener('click', async (e) => {
+          const downloadBtn = e.target.closest('[data-download-worker-pdf]');
+          if (downloadBtn) {
+            const workerId = downloadBtn.dataset.downloadWorkerPdf;
+            const idx = state.workers.findIndex((w) => w.id === workerId);
+            if (idx === -1) return;
+
+            const worker = state.workers[idx];
+            const originalHTML = downloadBtn.innerHTML;
+            downloadBtn.disabled = true;
+            downloadBtn.textContent = 'PDF બને છે...';
+
+            const ok = await generateAndSaveSingleWorkerPDF(worker, idx);
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = originalHTML;
+
+            if (ok) {
+              showToast(`${worker.name} ની PDF ડાઉનલોડ થઈ ગઈ છે!`);
+            }
+            return;
+          }
+
+          const previewBtn = e.target.closest('[data-preview-worker-pdf]');
+          if (previewBtn) {
+            const workerId = previewBtn.dataset.previewWorkerPdf;
+            const worker = state.workers.find((w) => w.id === workerId);
+            if (worker) openWorkerPrintPreview(worker);
+          }
+        });
+
+        // Sequential Bulk Download: 1 separate PDF file per worker
+        bulkDownloadBtn.addEventListener('click', async () => {
+          if (state.workers.length === 0) {
+            showToast('PDF ડાઉનલોડ કરવા માટે કોઈ કારીગર નથી.', 'error');
+            return;
+          }
+
+          const progressBox = document.getElementById('bulk-pdf-progress');
+          const statusText = document.getElementById('bulk-pdf-status-text');
+          const counterText = document.getElementById('bulk-pdf-counter');
+          const progressBar = document.getElementById('bulk-pdf-bar');
+
+          bulkDownloadBtn.disabled = true;
+          progressBox.classList.remove('hidden');
+
+          const total = state.workers.length;
+          for (let i = 0; i < total; i++) {
+            const worker = state.workers[i];
+            statusText.textContent = `ડાઉનલોડ થાય છે: ${worker.name} ની અલગ PDF...`;
+            counterText.textContent = `${i + 1} / ${total}`;
+            progressBar.style.width = `${Math.round(((i + 1) / total) * 100)}%`;
+
+            await generateAndSaveSingleWorkerPDF(worker, i);
+            // Small pause between downloads so browsers do not block sequential files
+            await new Promise((resolve) => setTimeout(resolve, 450));
+          }
+
+          statusText.textContent = `બધા ${total} કારીગરોની અલગ-અલગ PDF સફળતાપૂર્વક ડાઉનલોડ થઈ ગઈ છે!`;
+          bulkDownloadBtn.disabled = false;
+          showToast(`બધા ${total} કારીગરોની અલગ PDF ડાઉનલોડ થઈ ગઈ!`);
+
+          setTimeout(() => {
+            progressBox.classList.add('hidden');
+            progressBar.style.width = '0%';
+          }, 3500);
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+          previewModal.classList.add('hidden');
+          previewModal.classList.remove('flex');
+        });
+
+        modalPrintBtn.addEventListener('click', () => {
+          window.print();
+        });
+
+        modalDownloadBtn.addEventListener('click', async () => {
+          if (!currentPreviewWorker) return;
+          const idx = state.workers.findIndex((w) => w.id === currentPreviewWorker.id);
+          await generateAndSaveSingleWorkerPDF(currentPreviewWorker, idx >= 0 ? idx : 0);
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 9. NOTES PAGE LOGIC (કારખાનાની નોંધ)
       // -------------------------------------------------------------------
       function renderDashboard() {
         const today = getTodayISO();
-        document.getElementById('dashboard-today-label').textContent = `Today: ${formatReadableDate(today)}`;
+        document.getElementById('dashboard-today-label').textContent = `આજની તારીખ: ${formatGujaratiDate(today)} • શિફ્ટ: સવારે 8:00 થી સાંજે 5:00`;
 
         const totalWorkers = state.workers.length;
-        const todayRecord = state.attendance[today] || {};
-
         let presentCount = 0;
         let halfCount = 0;
         let absentCount = 0;
+        let totalOtHours = 0;
+        let totalWageToday = 0;
 
         state.workers.forEach((w) => {
-          const st = todayRecord[w.id];
-          if (st === 'P') presentCount++;
-          else if (st === 'H') halfCount++;
-          else if (st === 'A') absentCount++;
-        });
+          const rec = getWorkerDayRecord(today, w.id);
+          if (rec.status === 'P') presentCount++;
+          else if (rec.status === 'H') halfCount++;
+          else if (rec.status === 'A') absentCount++;
 
-        const pct = totalWorkers > 0 ? Math.round(((presentCount + halfCount * 0.5) / totalWorkers) * 100) : 0;
+          totalOtHours += rec.otHours;
+          const earnings = calculateWorkerEarnings(w, rec);
+          totalWageToday += earnings.totalPay;
+        });
 
         document.getElementById('stat-total-workers').textContent = totalWorkers;
         document.getElementById('stat-present-today').textContent = presentCount;
-        document.getElementById('stat-present-pct').textContent = `${pct}% effective workforce today`;
-        document.getElementById('stat-absent-half-today').textContent = halfCount + absentCount;
-        document.getElementById('stat-absent-half-detail').textContent = `${halfCount} Half-Day • ${absentCount} Absent`;
-        document.getElementById('stat-total-notes').textContent = state.notes.length;
+        document.getElementById('stat-attendance-breakdown').textContent = `${presentCount} હાજર • ${halfCount} અડધો • ${absentCount} ગેરહાજર`;
+        document.getElementById('stat-ot-hours').textContent = `${totalOtHours} કલાક`;
+        document.getElementById('stat-total-wage').textContent = formatRupees(totalWageToday);
 
         // Render Today's Worker Preview
         const workerPreviewEl = document.getElementById('dashboard-worker-preview');
         if (state.workers.length === 0) {
-          workerPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">No workers added yet. Go to Worker Attendance to add staff.</p>`;
+          workerPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">હજુ સુધી કોઈ કારીગર ઉમેરવામાં આવ્યા નથી.</p>`;
         } else {
           workerPreviewEl.innerHTML = state.workers
             .slice(0, 6)
             .map((w) => {
-              const status = todayRecord[w.id];
-              let badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-slate-100 text-slate-500">Not Marked</span>`;
-              if (status === 'P') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">Present</span>`;
-              if (status === 'H') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-amber-100 text-amber-800">Half-Day</span>`;
-              if (status === 'A') badge = `<span class="px-2.5 py-1 rounded-md text-xs font-bold bg-red-100 text-red-800">Absent</span>`;
+              const rec = getWorkerDayRecord(today, w.id);
+              const earnings = calculateWorkerEarnings(w, rec);
+
+              let badge = `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-slate-100 text-slate-500">બાકી</span>`;
+              if (rec.status === 'P') badge = `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-100 text-emerald-800">હાજર</span>`;
+              if (rec.status === 'H') badge = `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-amber-100 text-amber-800">અડધો દિવસ</span>`;
+              if (rec.status === 'A') badge = `<span class="px-2 py-0.5 rounded-md text-xs font-bold bg-red-100 text-red-800">ગેરહાજર</span>`;
 
               return `
                 <div class="py-2.5 flex items-center justify-between gap-3">
                   <div>
                     <p class="text-sm font-bold text-slate-900">${escapeHTML(w.name)}</p>
-                    <p class="text-xs text-slate-500">${escapeHTML(w.role)}</p>
+                    <p class="text-xs text-slate-500">${escapeHTML(w.role)} &bull; રોજ: ${formatRupees(w.dailyRate)} &bull; OT: ${rec.otHours} કલાક</p>
                   </div>
-                  ${badge}
+                  <div class="text-right flex flex-col items-end gap-1">
+                    ${badge}
+                    <span class="text-xs font-extrabold text-blue-700">${formatRupees(earnings.totalPay)}</span>
+                  </div>
                 </div>
               `;
             })
@@ -974,7 +2094,7 @@
         // Render Recent Notes Preview
         const notesPreviewEl = document.getElementById('dashboard-notes-preview');
         if (state.notes.length === 0) {
-          notesPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">No notes recorded yet.</p>`;
+          notesPreviewEl.innerHTML = `<p class="text-sm text-slate-500 py-4 text-center">હજુ સુધી કોઈ નોંધ લખવામાં આવી નથી.</p>`;
         } else {
           notesPreviewEl.innerHTML = state.notes
             .slice(0, 3)
@@ -995,7 +2115,7 @@
       }
 
       // -------------------------------------------------------------------
-      // 7. WORKER ATTENDANCE PAGE LOGIC
+      // 7. WORKER ATTENDANCE & OVERTIME PAGE LOGIC
       // -------------------------------------------------------------------
       function renderAttendancePage() {
         const dateInput = document.getElementById('attendance-date');
@@ -1003,33 +2123,38 @@
 
         const isToday = state.selectedDate === getTodayISO();
         document.getElementById('selected-date-display').textContent = isToday
-          ? `Today (${formatReadableDate(state.selectedDate)})`
-          : formatReadableDate(state.selectedDate);
-
-        const dayRecord = state.attendance[state.selectedDate] || {};
+          ? `આજ (${formatGujaratiDate(state.selectedDate)})`
+          : formatGujaratiDate(state.selectedDate);
 
         let present = 0;
         let half = 0;
         let absent = 0;
+        let totalOtHours = 0;
+        let totalPayable = 0;
 
         state.workers.forEach((w) => {
-          const st = dayRecord[w.id];
-          if (st === 'P') present++;
-          else if (st === 'H') half++;
-          else if (st === 'A') absent++;
+          const rec = getWorkerDayRecord(state.selectedDate, w.id);
+          if (rec.status === 'P') present++;
+          else if (rec.status === 'H') half++;
+          else if (rec.status === 'A') absent++;
+
+          totalOtHours += rec.otHours;
+          const earnings = calculateWorkerEarnings(w, rec);
+          totalPayable += earnings.totalPay;
         });
 
-        document.getElementById('att-count-total').textContent = state.workers.length;
         document.getElementById('att-count-present').textContent = present;
         document.getElementById('att-count-half').textContent = half;
         document.getElementById('att-count-absent').textContent = absent;
+        document.getElementById('att-total-ot').textContent = `${totalOtHours} કલાક`;
+        document.getElementById('att-total-payable').textContent = formatRupees(totalPayable);
 
         const container = document.getElementById('worker-list-container');
         if (state.workers.length === 0) {
           container.innerHTML = `
             <div class="text-center py-10 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-              <p class="text-base font-bold text-slate-700">No Workers Registered Yet</p>
-              <p class="text-xs text-slate-500 mt-1">Use the "Add New Worker to Karkhano" form above to add your karigars and helpers.</p>
+              <p class="text-base font-bold text-slate-700">હજુ સુધી કોઈ કારીગર ઉમેરવામાં આવ્યા નથી</p>
+              <p class="text-xs text-slate-500 mt-1">ઉપર આપેલા "નવો કારીગર ઉમેરો" ફોર્મમાંથી કારીગરનું નામ અને પગાર ઉમેરો.</p>
             </div>
           `;
           return;
@@ -1037,90 +2162,156 @@
 
         container.innerHTML = state.workers
           .map((worker, index) => {
-            const status = dayRecord[worker.id] || '';
+            const rec = getWorkerDayRecord(state.selectedDate, worker.id);
+            const earnings = calculateWorkerEarnings(worker, rec);
+
             const rowBorder =
-              status === 'P'
+              rec.status === 'P'
                 ? 'border-emerald-300 bg-emerald-50/30'
-                : status === 'H'
+                : rec.status === 'H'
                 ? 'border-amber-300 bg-amber-50/30'
-                : status === 'A'
+                : rec.status === 'A'
                 ? 'border-red-300 bg-red-50/30'
                 : 'border-slate-200 bg-white';
 
             const btnP =
-              status === 'P'
+              rec.status === 'P'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm ring-2 ring-emerald-500/30'
                 : 'bg-white hover:bg-emerald-50 text-emerald-700 border-slate-300';
 
             const btnH =
-              status === 'H'
+              rec.status === 'H'
                 ? 'bg-amber-500 text-slate-950 border-amber-500 shadow-sm ring-2 ring-amber-500/30'
                 : 'bg-white hover:bg-amber-50 text-amber-700 border-slate-300';
 
             const btnA =
-              status === 'A'
+              rec.status === 'A'
                 ? 'bg-red-600 text-white border-red-600 shadow-sm ring-2 ring-red-500/30'
                 : 'bg-white hover:bg-red-50 text-red-700 border-slate-300';
 
             return `
-              <div class="border ${rowBorder} rounded-xl p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition">
-                <!-- Worker Info -->
-                <div class="flex items-start gap-3">
-                  <div class="w-9 h-9 rounded-lg bg-slate-900 text-amber-400 font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                    #${index + 1}
-                  </div>
-                  <div>
-                    <h4 class="text-base font-extrabold text-slate-900 leading-snug">${escapeHTML(worker.name)}</h4>
-                    <div class="flex flex-wrap items-center gap-2 mt-1">
-                      <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-xs font-bold">${escapeHTML(worker.role)}</span>
-                      ${worker.phone ? `<span class="text-xs text-slate-500 font-medium">${escapeHTML(worker.phone)}</span>` : ''}
+              <div class="border ${rowBorder} rounded-2xl p-4 transition shadow-2xs">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <!-- Left: Worker Details & Different Rupees Rates -->
+                  <div class="flex items-start gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-slate-900 text-amber-400 font-extrabold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                      #${index + 1}
+                    </div>
+                    <div>
+                      <div class="flex flex-wrap items-center gap-2">
+                        <h4 class="text-base font-extrabold text-slate-900 leading-snug">${escapeHTML(worker.name)}</h4>
+                        <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-xs font-bold">${escapeHTML(worker.role)}</span>
+                        ${worker.phone ? `<span class="text-xs text-slate-500 font-medium">📞 ${escapeHTML(worker.phone)}</span>` : ''}
+                      </div>
+                      <div class="flex flex-wrap items-center gap-2 mt-1.5 text-xs">
+                        <span class="px-2.5 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-bold">
+                          શિફ્ટ (8 થી 5): ${formatRupees(worker.dailyRate)}/દિવસ
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 font-bold">
+                          ઓવરટાઇમ: ${formatRupees(worker.otRate)}/કલાક
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <!-- Status Buttons + Delete -->
-                <div class="flex items-center justify-between sm:justify-end gap-2 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/80">
-                  <div class="grid grid-cols-3 gap-1.5 flex-1 sm:flex-initial">
-                    <button
-                      type="button"
-                      data-worker-id="${worker.id}"
-                      data-status="P"
-                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnP}"
-                      title="Present"
-                    >
-                      P <span class="hidden md:inline font-semibold">Present</span>
-                    </button>
-                    <button
-                      type="button"
-                      data-worker-id="${worker.id}"
-                      data-status="H"
-                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnH}"
-                      title="Half-Day"
-                    >
-                      H <span class="hidden md:inline font-semibold">Half</span>
-                    </button>
-                    <button
-                      type="button"
-                      data-worker-id="${worker.id}"
-                      data-status="A"
-                      class="att-status-btn px-3.5 py-2.5 rounded-lg border text-xs sm:text-sm font-extrabold transition cursor-pointer ${btnA}"
-                      title="Absent"
-                    >
-                      A <span class="hidden md:inline font-semibold">Absent</span>
-                    </button>
+                  <!-- Center: 8 to 5 Shift Buttons + Overtime Controls -->
+                  <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-3 lg:pt-0 border-t lg:border-t-0 border-slate-200/80">
+                    <!-- Shift Status Buttons -->
+                    <div class="grid grid-cols-3 gap-1.5">
+                      <button
+                        type="button"
+                        data-worker-id="${worker.id}"
+                        data-status="P"
+                        class="att-status-btn px-3 py-2.5 rounded-xl border text-xs font-extrabold transition cursor-pointer ${btnP}"
+                      >
+                        હાજર (8-5)
+                      </button>
+                      <button
+                        type="button"
+                        data-worker-id="${worker.id}"
+                        data-status="H"
+                        class="att-status-btn px-3 py-2.5 rounded-xl border text-xs font-extrabold transition cursor-pointer ${btnH}"
+                      >
+                        અડધો દિવસ
+                      </button>
+                      <button
+                        type="button"
+                        data-worker-id="${worker.id}"
+                        data-status="A"
+                        class="att-status-btn px-3 py-2.5 rounded-xl border text-xs font-extrabold transition cursor-pointer ${btnA}"
+                      >
+                        ગેરહાજર
+                      </button>
+                    </div>
+
+                    <!-- Overtime Hours Control -->
+                    <div class="flex items-center justify-between sm:justify-start gap-1.5 bg-slate-100 border border-slate-300 rounded-xl px-2.5 py-1.5">
+                      <span class="text-xs font-bold text-slate-700 mr-1">ઓવરટાઇમ:</span>
+                      <button
+                        type="button"
+                        data-ot-delta="-0.5"
+                        data-worker-id="${worker.id}"
+                        class="ot-step-btn w-8 h-8 rounded-lg bg-white hover:bg-slate-200 border border-slate-300 text-slate-900 font-extrabold text-sm flex items-center justify-center cursor-pointer"
+                        aria-label="ઓવરટાઇમ ઘટાડો"
+                      >
+                        &minus;
+                      </button>
+                      <input
+                        type="number"
+                        min="0"
+                        max="16"
+                        step="0.5"
+                        value="${rec.otHours}"
+                        data-worker-id="${worker.id}"
+                        aria-label="ઓવરટાઇમ કલાક"
+                        class="ot-input w-14 text-center bg-white border border-slate-300 rounded-lg py-1 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-amber-500"
+                      />
+                      <button
+                        type="button"
+                        data-ot-delta="0.5"
+                        data-worker-id="${worker.id}"
+                        class="ot-step-btn w-8 h-8 rounded-lg bg-white hover:bg-slate-200 border border-slate-300 text-slate-900 font-extrabold text-sm flex items-center justify-center cursor-pointer"
+                        aria-label="ઓવરટાઇમ વધારો"
+                      >
+                        +
+                      </button>
+                      <span class="text-[11px] font-bold text-slate-500 ml-0.5">કલાક</span>
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    data-delete-worker="${worker.id}"
-                    aria-label="Remove worker ${escapeHTML(worker.name)}"
-                    class="p-2.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer ml-1"
-                    title="Delete Worker"
-                  >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
-                    </svg>
-                  </button>
+                  <!-- Right: Live Daily Earnings + Edit/Delete Worker -->
+                  <div class="flex items-center justify-between lg:justify-end gap-3 pt-2.5 lg:pt-0 border-t lg:border-t-0 border-slate-200/80">
+                    <div class="text-left lg:text-right">
+                      <span class="block text-[11px] font-bold text-slate-500">આજનો કુલ હિસાબ</span>
+                      <span class="text-lg font-extrabold text-blue-700">${formatRupees(earnings.totalPay)}</span>
+                      <span class="block text-[11px] text-slate-500">
+                        શિફ્ટ ${formatRupees(earnings.shiftPay)} + OT ${formatRupees(earnings.otPay)}
+                      </span>
+                    </div>
+
+                    <div class="flex items-center gap-1">
+                      <button
+                        type="button"
+                        data-edit-worker="${worker.id}"
+                        class="p-2 rounded-lg text-slate-500 hover:text-amber-700 hover:bg-amber-50 transition cursor-pointer"
+                        title="કારીગરનો પગાર / વિગત સુધારો"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        data-delete-worker="${worker.id}"
+                        class="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+                        title="કારીગર દૂર કરો"
+                      >
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             `;
@@ -1128,13 +2319,38 @@
           .join('');
       }
 
+      function resetWorkerForm() {
+        document.getElementById('add-worker-form').reset();
+        document.getElementById('worker-edit-id').value = '';
+        document.getElementById('worker-form-heading').innerHTML = `
+          <span class="w-6 h-6 rounded-md bg-amber-500 text-slate-950 flex items-center justify-center text-sm font-black">+</span>
+          <span>નવો કારીગર ઉમેરો (અલગ પગાર અને ઓવરટાઇમ દર સાથે)</span>
+        `;
+        document.getElementById('worker-submit-btn').textContent = '+ નવો કારીગર ઉમેરો';
+        document.getElementById('cancel-edit-worker-btn').classList.add('hidden');
+      }
+
       function setupAttendanceEvents() {
         const dateInput = document.getElementById('attendance-date');
         const todayBtn = document.getElementById('today-date-btn');
         const addWorkerForm = document.getElementById('add-worker-form');
+        const dailyRateInput = document.getElementById('worker-daily-rate');
+        const otRateInput = document.getElementById('worker-ot-rate');
+        const cancelEditWorkerBtn = document.getElementById('cancel-edit-worker-btn');
         const workerListContainer = document.getElementById('worker-list-container');
         const markAllPresentBtn = document.getElementById('mark-all-present-btn');
         const copyReportBtn = document.getElementById('copy-report-btn');
+
+        // Auto-suggest OT hourly rate (Daily Rate / 8) when typing daily rate if OT rate is empty
+        dailyRateInput.addEventListener('input', () => {
+          const editId = document.getElementById('worker-edit-id').value;
+          if (!editId) {
+            const dailyVal = Number(dailyRateInput.value);
+            if (dailyVal > 0) {
+              otRateInput.value = Math.round(dailyVal / 8);
+            }
+          }
+        });
 
         dateInput.addEventListener('change', (e) => {
           if (e.target.value) {
@@ -1146,40 +2362,63 @@
         todayBtn.addEventListener('click', () => {
           state.selectedDate = getTodayISO();
           renderAttendancePage();
-          showToast('Switched to today\'s date', 'info');
+          showToast('આજની તારીખ પસંદ થઈ ગઈ છે', 'info');
+        });
+
+        cancelEditWorkerBtn.addEventListener('click', () => {
+          resetWorkerForm();
         });
 
         addWorkerForm.addEventListener('submit', (e) => {
           e.preventDefault();
-          const nameInput = document.getElementById('worker-name');
-          const roleInput = document.getElementById('worker-role');
-          const phoneInput = document.getElementById('worker-phone');
-
-          const name = nameInput.value.trim();
-          const role = roleInput.value;
-          const phone = phoneInput.value.trim();
+          const editId = document.getElementById('worker-edit-id').value;
+          const name = document.getElementById('worker-name').value.trim();
+          const role = document.getElementById('worker-role').value;
+          const dailyRate = Math.max(0, Number(dailyRateInput.value) || 0);
+          const otRate = Math.max(0, Number(otRateInput.value) || 0);
+          const phone = document.getElementById('worker-phone').value.trim();
 
           if (!name) {
-            showToast('Please enter a worker name.', 'error');
+            showToast('કૃપા કરીને કારીગરનું નામ લખો.', 'error');
             return;
           }
 
-          const newWorker = {
-            id: 'w_' + Date.now(),
-            name,
-            role,
-            phone,
-          };
+          if (editId) {
+            const idx = state.workers.findIndex((w) => w.id === editId);
+            if (idx !== -1) {
+              state.workers[idx] = {
+                ...state.workers[idx],
+                name,
+                role,
+                dailyRate,
+                otRate,
+                phone,
+                savedBy: state.currentUser || ADMIN_ID,
+              };
+              saveWorkers(`કારીગર "${name}" ની વિગત અને પગાર (₹${dailyRate}/દિવસ, OT ₹${otRate}/કલાક) સુધાર્યા.`);
+              showToast(`${name} ની વિગત અને પગાર અપડેટ થઈ ગયા છે!`);
+            }
+          } else {
+            state.workers.push({
+              id: 'w_' + Date.now(),
+              name,
+              role,
+              dailyRate,
+              otRate,
+              phone,
+              savedBy: state.currentUser || ADMIN_ID,
+            });
+            saveWorkers(`નવો કારીગર "${name}" (${role}, ₹${dailyRate}/દિવસ) ઉમેર્યો.`);
+            showToast(`${name} કારીગર લિસ્ટમાં ઉમેરાઈ ગયા છે!`);
+          }
 
-          state.workers.push(newWorker);
-          saveWorkers();
-          addWorkerForm.reset();
+          resetWorkerForm();
           renderAttendancePage();
-          showToast(`Added ${name} to worker list!`);
         });
 
-        // Event delegation for P/H/A status buttons and Delete Worker
+        // Event delegation for shift buttons, OT +/- buttons, Edit Worker, and Delete Worker
         workerListContainer.addEventListener('click', (e) => {
+          // 1. Shift Status Button (હાજર / અડધો દિવસ / ગેરહાજર)
           const statusBtn = e.target.closest('.att-status-btn');
           if (statusBtn) {
             const workerId = statusBtn.dataset.workerId;
@@ -1188,12 +2427,72 @@
             if (!state.attendance[state.selectedDate]) {
               state.attendance[state.selectedDate] = {};
             }
-            state.attendance[state.selectedDate][workerId] = status;
-            saveAttendance();
+            const current = getWorkerDayRecord(state.selectedDate, workerId);
+            state.attendance[state.selectedDate][workerId] = {
+              status,
+              otHours: status === 'A' ? 0 : current.otHours,
+              savedBy: state.currentUser || ADMIN_ID,
+            };
+            const workerObj = state.workers.find((w) => w.id === workerId);
+            const statusGu = status === 'P' ? 'હાજર' : status === 'H' ? 'અડધો દિવસ' : 'ગેરહાજર';
+            saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} ની હાજરી "${statusGu}" સેવ કરી.`);
             renderAttendancePage();
             return;
           }
 
+          // 2. Overtime Step Buttons (-0.5 / +0.5)
+          const otStepBtn = e.target.closest('.ot-step-btn');
+          if (otStepBtn) {
+            const workerId = otStepBtn.dataset.workerId;
+            const delta = Number(otStepBtn.dataset.otDelta) || 0;
+
+            if (!state.attendance[state.selectedDate]) {
+              state.attendance[state.selectedDate] = {};
+            }
+            const current = getWorkerDayRecord(state.selectedDate, workerId);
+            const nextHours = Math.max(0, Math.min(16, Math.round((current.otHours + delta) * 10) / 10));
+
+            // Automatically mark Present if admin adds OT hours to an unmarked worker
+            const nextStatus = nextHours > 0 && !current.status ? 'P' : current.status;
+
+            state.attendance[state.selectedDate][workerId] = {
+              status: nextStatus,
+              otHours: nextHours,
+              savedBy: state.currentUser || ADMIN_ID,
+            };
+            const workerObj = state.workers.find((w) => w.id === workerId);
+            saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${nextHours} કલાક સેવ કર્યો.`);
+            renderAttendancePage();
+            return;
+          }
+
+          // 3. Edit Worker (Different Rupees / Details)
+          const editBtn = e.target.closest('[data-edit-worker]');
+          if (editBtn) {
+            const workerId = editBtn.dataset.editWorker;
+            const worker = state.workers.find((w) => w.id === workerId);
+            if (!worker) return;
+
+            document.getElementById('worker-edit-id').value = worker.id;
+            document.getElementById('worker-name').value = worker.name;
+            document.getElementById('worker-role').value = worker.role;
+            document.getElementById('worker-daily-rate').value = worker.dailyRate;
+            document.getElementById('worker-ot-rate').value = worker.otRate;
+            document.getElementById('worker-phone').value = worker.phone || '';
+
+            document.getElementById('worker-form-heading').innerHTML = `
+              <span class="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-xs font-black">✎</span>
+              <span>કારીગરની વિગત અને પગાર સુધારો: ${escapeHTML(worker.name)}</span>
+            `;
+            document.getElementById('worker-submit-btn').textContent = 'ફેરફાર સાચવો';
+            document.getElementById('cancel-edit-worker-btn').classList.remove('hidden');
+
+            document.getElementById('worker-name').focus();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+
+          // 4. Delete Worker
           const deleteBtn = e.target.closest('[data-delete-worker]');
           if (deleteBtn) {
             const workerId = deleteBtn.dataset.deleteWorker;
@@ -1201,71 +2500,111 @@
             if (!worker) return;
 
             showConfirmModal(
-              'Remove Worker?',
-              `Are you sure you want to remove "${worker.name}" from Century Product?`,
+              'કારીગર દૂર કરો?',
+              `શું તમે ખરેખર "${worker.name}" ને સેન્ચ્યુરી પ્રોડક્ટ લિસ્ટમાંથી દૂર કરવા માંગો છો?`,
               () => {
                 state.workers = state.workers.filter((w) => w.id !== workerId);
-                saveWorkers();
+                saveWorkers(`કારીગર "${worker.name}" ને લિસ્ટમાંથી ડિલીટ કર્યા.`);
+                if (document.getElementById('worker-edit-id').value === workerId) {
+                  resetWorkerForm();
+                }
                 renderAttendancePage();
-                showToast(`Removed ${worker.name}`, 'info');
+                showToast(`${worker.name} ને લિસ્ટમાંથી દૂર કર્યા છે.`, 'info');
               }
             );
           }
         });
 
+        // Direct typing in Overtime Hours input
+        workerListContainer.addEventListener('change', (e) => {
+          const otInput = e.target.closest('.ot-input');
+          if (!otInput) return;
+
+          const workerId = otInput.dataset.workerId;
+          const val = Math.max(0, Math.min(16, Number(otInput.value) || 0));
+
+          if (!state.attendance[state.selectedDate]) {
+            state.attendance[state.selectedDate] = {};
+          }
+          const current = getWorkerDayRecord(state.selectedDate, workerId);
+          const nextStatus = val > 0 && !current.status ? 'P' : current.status;
+
+          state.attendance[state.selectedDate][workerId] = {
+            status: nextStatus,
+            otHours: val,
+            savedBy: state.currentUser || ADMIN_ID,
+          };
+          const workerObj = state.workers.find((w) => w.id === workerId);
+          saveAttendance(`${state.selectedDate}: ${workerObj ? workerObj.name : workerId} નો ઓવરટાઇમ ${val} કલાક સેવ કર્યો.`);
+          renderAttendancePage();
+        });
+
         markAllPresentBtn.addEventListener('click', () => {
           if (state.workers.length === 0) {
-            showToast('No workers to mark.', 'error');
+            showToast('હાજરી ભરવા માટે કોઈ કારીગર નથી.', 'error');
             return;
           }
           if (!state.attendance[state.selectedDate]) {
             state.attendance[state.selectedDate] = {};
           }
           state.workers.forEach((w) => {
-            state.attendance[state.selectedDate][w.id] = 'P';
+            const current = getWorkerDayRecord(state.selectedDate, w.id);
+            state.attendance[state.selectedDate][w.id] = {
+              status: 'P',
+              otHours: current.otHours,
+              savedBy: state.currentUser || ADMIN_ID,
+            };
           });
-          saveAttendance();
+          saveAttendance(`${state.selectedDate}: બધા ${state.workers.length} કારીગરોને હાજર (8-5) સેવ કર્યા.`);
           renderAttendancePage();
-          showToast('All workers marked Present!');
+          showToast('બધા કારીગરોને હાજર (8 થી 5) કરી દેવામાં આવ્યા છે!');
         });
 
-        // Copy WhatsApp-friendly Daily Attendance Report
+        // Copy WhatsApp-friendly Gujarati Attendance & Wage Report
         copyReportBtn.addEventListener('click', () => {
           if (state.workers.length === 0) {
-            showToast('No workers available for report.', 'error');
+            showToast('રિપોર્ટ બનાવવા માટે કોઈ કારીગર નથી.', 'error');
             return;
           }
 
-          const dayRecord = state.attendance[state.selectedDate] || {};
           let present = 0;
           let half = 0;
           let absent = 0;
+          let totalOt = 0;
+          let grandTotal = 0;
 
           const lines = state.workers.map((w, idx) => {
-            const st = dayRecord[w.id];
-            let label = 'Unmarked';
-            if (st === 'P') {
+            const rec = getWorkerDayRecord(state.selectedDate, w.id);
+            const earnings = calculateWorkerEarnings(w, rec);
+            totalOt += rec.otHours;
+            grandTotal += earnings.totalPay;
+
+            let label = 'બાકી';
+            if (rec.status === 'P') {
               present++;
-              label = '✅ Present';
-            } else if (st === 'H') {
+              label = '✅ હાજર (8-5)';
+            } else if (rec.status === 'H') {
               half++;
-              label = '🌓 Half-Day';
-            } else if (st === 'A') {
+              label = '🌓 અડધો દિવસ';
+            } else if (rec.status === 'A') {
               absent++;
-              label = '❌ Absent';
+              label = '❌ ગેરહાજર';
             }
-            return `${idx + 1}. ${w.name} (${w.role}) — ${label}`;
+
+            const otPart = rec.otHours > 0 ? ` + OT ${rec.otHours} કલાક` : '';
+            return `${idx + 1}. ${w.name} (${w.role}) — ${label}${otPart} = ${formatRupees(earnings.totalPay)}`;
           });
 
           const reportText = [
-            `*CENTURY PRODUCT — KARKHANO ATTENDANCE*`,
-            `Date: ${formatReadableDate(state.selectedDate)}`,
-            `Summary: Present: ${present} | Half-Day: ${half} | Absent: ${absent} | Total: ${state.workers.length}`,
+            `*સેન્ચ્યુરી પ્રોડક્ટ — કારખાના હાજરી અને પગાર રિપોર્ટ*`,
+            `તારીખ: ${formatGujaratiDate(state.selectedDate)}`,
+            `શિફ્ટ સમય: સવારે 8:00 થી સાંજે 5:00`,
+            `કુલ: હાજર: ${present} | અડધો દિવસ: ${half} | ગેરહાજર: ${absent}`,
+            `કુલ ઓવરટાઇમ: ${totalOt} કલાક | કુલ પગાર: ${formatRupees(grandTotal)}`,
             `----------------------------------`,
             ...lines,
           ].join('\n');
 
-          // Use textarea + execCommand('copy') for reliable iFrame/mobile support
           const tempArea = document.createElement('textarea');
           tempArea.value = reportText;
           tempArea.style.position = 'fixed';
@@ -1275,9 +2614,9 @@
 
           try {
             document.execCommand('copy');
-            showToast('Attendance report copied! Ready to paste in WhatsApp.');
+            showToast('ગુજરાતી રિપોર્ટ કોપી થઈ ગયો! હવે WhatsApp માં પેસ્ટ કરો.');
           } catch (err) {
-            showToast('Failed to copy report.', 'error');
+            showToast('રિપોર્ટ કોપી થઈ શક્યો નથી.', 'error');
           } finally {
             document.body.removeChild(tempArea);
           }
@@ -1285,15 +2624,15 @@
       }
 
       // -------------------------------------------------------------------
-      // 8. NOTES PAGE LOGIC
+      // 8. NOTES PAGE LOGIC (કારખાનાની નોંધ)
       // -------------------------------------------------------------------
       function getCategoryBadgeClasses(category) {
         switch (category) {
-          case 'Production':
+          case 'ઉત્પાદન':
             return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-          case 'Material/Stock':
+          case 'માલ / સ્ટોક':
             return 'bg-amber-100 text-amber-900 border-amber-200';
-          case 'Maintenance':
+          case 'મશીન રિપેરિંગ':
             return 'bg-red-100 text-red-800 border-red-200';
           default:
             return 'bg-slate-200 text-slate-800 border-slate-300';
@@ -1304,7 +2643,6 @@
         const grid = document.getElementById('notes-grid');
         const query = state.noteSearchQuery.toLowerCase();
 
-        // Update filter pill styles
         document.querySelectorAll('.cat-filter-btn').forEach((btn) => {
           if (btn.dataset.cat === state.noteFilterCategory) {
             btn.className = 'cat-filter-btn px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer bg-slate-900 text-amber-400';
@@ -1326,8 +2664,8 @@
         if (filteredNotes.length === 0) {
           grid.innerHTML = `
             <div class="md:col-span-2 text-center py-12 px-4 bg-white rounded-2xl border border-dashed border-slate-300">
-              <p class="text-base font-bold text-slate-700">No Matching Notes Found</p>
-              <p class="text-xs text-slate-500 mt-1">Add a new note above or clear your search/category filter.</p>
+              <p class="text-base font-bold text-slate-700">કોઈ નોંધ મળી નથી</p>
+              <p class="text-xs text-slate-500 mt-1">ઉપરથી નવી નોંધ ઉમેરો અથવા સર્ચ ફિલ્ટર બદલો.</p>
             </div>
           `;
           return;
@@ -1346,24 +2684,24 @@
                     <span class="text-xs text-slate-400 font-medium">${escapeHTML(note.updatedAt)}</span>
                   </div>
                   <h3 class="text-base font-extrabold text-slate-900 mb-1.5">${escapeHTML(note.title)}</h3>
-                  <p class="text-sm text-slate-600 whitespace-pre-line leading-relaxed">${escapeHTML(note.content)}</p>
-                </div>
-
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    data-edit-note="${note.id}"
-                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 text-xs font-bold transition cursor-pointer"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    data-delete-note="${note.id}"
-                    class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold transition cursor-pointer"
-                  >
-                    Delete
-                  </button>
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <span class="text-[11px] font-bold text-slate-400">${note.savedBy ? 'સેવ કરનાર: ' + escapeHTML(note.savedBy) : ''}</span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-edit-note="${note.id}"
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 text-xs font-bold transition cursor-pointer"
+                    >
+                      સુધારો
+                    </button>
+                    <button
+                      type="button"
+                      data-delete-note="${note.id}"
+                      class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-100 text-slate-700 hover:text-red-700 text-xs font-bold transition cursor-pointer"
+                    >
+                      દૂર કરો
+                    </button>
+                  </div>
                 </div>
               </article>
             `;
@@ -1374,8 +2712,8 @@
       function resetNoteForm() {
         document.getElementById('note-form').reset();
         document.getElementById('note-edit-id').value = '';
-        document.getElementById('note-form-heading').textContent = 'Create Karkhano Note';
-        document.getElementById('note-submit-btn').textContent = 'Save Note';
+        document.getElementById('note-form-heading').textContent = 'કારખાનાની નવી નોંધ લખો';
+        document.getElementById('note-submit-btn').textContent = 'નોંધ સાચવો';
         document.getElementById('cancel-edit-note-btn').classList.add('hidden');
       }
 
@@ -1394,14 +2732,11 @@
           const content = document.getElementById('note-content').value.trim();
 
           if (!title || !content) {
-            showToast('Please enter both note title and details.', 'error');
+            showToast('કૃપા કરીને નોંધનું શીર્ષક અને વિગત બંને લખો.', 'error');
             return;
           }
 
-          const timestamp = new Date().toLocaleString('en-IN', {
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
+          const timestamp = getGujaratiTimestamp();
 
           if (editId) {
             const idx = state.notes.findIndex((n) => n.id === editId);
@@ -1412,8 +2747,10 @@
                 category,
                 content,
                 updatedAt: timestamp,
+                savedBy: state.currentUser || ADMIN_ID,
               };
-              showToast('Note updated!');
+              saveNotes(`નોંધ "${title}" સુધારીને સેવ કરી.`);
+              showToast('નોંધ સુધારાઈ ગઈ છે!');
             }
           } else {
             state.notes.unshift({
@@ -1422,11 +2759,12 @@
               category,
               content,
               updatedAt: timestamp,
+              savedBy: state.currentUser || ADMIN_ID,
             });
-            showToast('New note saved!');
+            saveNotes(`નવી નોંધ "${title}" (${category}) સેવ કરી.`);
+            showToast('નવી નોંધ સાચવી લેવામાં આવી છે!');
           }
 
-          saveNotes();
           resetNoteForm();
           renderNotesPage();
         });
@@ -1458,8 +2796,8 @@
             document.getElementById('note-title').value = note.title;
             document.getElementById('note-category').value = note.category;
             document.getElementById('note-content').value = note.content;
-            document.getElementById('note-form-heading').textContent = 'Edit Karkhano Note';
-            document.getElementById('note-submit-btn').textContent = 'Update Note';
+            document.getElementById('note-form-heading').textContent = 'નોંધમાં ફેરફાર કરો';
+            document.getElementById('note-submit-btn').textContent = 'ફેરફાર સાચવો';
             document.getElementById('cancel-edit-note-btn').classList.remove('hidden');
 
             document.getElementById('note-title').focus();
@@ -1474,16 +2812,16 @@
             if (!note) return;
 
             showConfirmModal(
-              'Delete Note?',
-              `Delete "${note.title}" permanently?`,
+              'નોંધ દૂર કરો?',
+              `શું તમે ખરેખર "${note.title}" નોંધ કાયમ માટે દૂર કરવા માંગો છો?`,
               () => {
                 state.notes = state.notes.filter((n) => n.id !== noteId);
-                saveNotes();
+                saveNotes(`નોંધ "${note.title}" ડિલીટ કરી.`);
                 if (document.getElementById('note-edit-id').value === noteId) {
                   resetNoteForm();
                 }
                 renderNotesPage();
-                showToast('Note deleted.', 'info');
+                showToast('નોંધ દૂર કરવામાં આવી છે.', 'info');
               }
             );
           }
@@ -1491,14 +2829,329 @@
       }
 
       // -------------------------------------------------------------------
-      // 9. INITIALIZE APPLICATION ON DOM READY
+      // 9. SAVED RECORDS, LOGIN AUDIT LOG & ADMIN MASTER EDIT/DELETE
+      // -------------------------------------------------------------------
+      function renderRecordsPage() {
+        document.getElementById('rec-current-user').textContent = state.currentUser || ADMIN_ID;
+        document.getElementById('rec-last-saved').textContent = `છેલ્લું સેવ: ${state.lastSavedAt || getGujaratiTimestamp()}`;
+        document.getElementById('rec-workers-count').textContent = state.workers.length;
+
+        const savedDateKeys = Object.keys(state.attendance).sort().reverse();
+        document.getElementById('rec-attendance-days').textContent = savedDateKeys.length;
+        document.getElementById('rec-logs-count').textContent = state.logs.length;
+
+        // 1. Render Master Worker Table with Edit & Delete
+        const tbody = document.getElementById('master-workers-tbody');
+        if (state.workers.length === 0) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="9" class="py-8 text-center text-slate-500 font-bold">કોઈ કારીગર સેવ થયેલ નથી.</td>
+            </tr>
+          `;
+        } else {
+          tbody.innerHTML = state.workers
+            .map((w, idx) => {
+              let totalPresentDays = 0;
+              Object.values(state.attendance).forEach((dayObj) => {
+                const entry = dayObj && dayObj[w.id];
+                const st = typeof entry === 'string' ? entry : entry && entry.status;
+                if (st === 'P') totalPresentDays += 1;
+                else if (st === 'H') totalPresentDays += 0.5;
+              });
+
+              return `
+                <tr class="hover:bg-slate-50">
+                  <td class="py-3 px-3 font-extrabold text-slate-700">#${idx + 1}</td>
+                  <td class="py-3 px-3 font-extrabold text-slate-900">${escapeHTML(w.name)}</td>
+                  <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800 text-xs font-bold">${escapeHTML(w.role)}</span></td>
+                  <td class="py-3 px-3 text-slate-600 font-medium">${w.phone ? escapeHTML(w.phone) : '-'}</td>
+                  <td class="py-3 px-3 font-extrabold text-blue-700">${formatRupees(w.dailyRate)}</td>
+                  <td class="py-3 px-3 font-extrabold text-amber-700">${formatRupees(w.otRate)} / કલાક</td>
+                  <td class="py-3 px-3 font-bold text-emerald-700">${totalPresentDays} દિવસ</td>
+                  <td class="py-3 px-3 text-xs font-bold text-slate-600">${escapeHTML(w.savedBy || 'admin')}</td>
+                  <td class="py-3 px-3 text-right">
+                    <div class="inline-flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        data-rec-edit-worker="${w.id}"
+                        class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-extrabold cursor-pointer"
+                      >
+                        Edit કરો
+                      </button>
+                      <button
+                        type="button"
+                        data-rec-delete-worker="${w.id}"
+                        class="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs font-extrabold cursor-pointer"
+                      >
+                        Delete કરો
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              `;
+            })
+            .join('');
+        }
+
+        // 2. Render Login & Activity Audit Logs
+        const logsListEl = document.getElementById('activity-logs-list');
+        if (state.logs.length === 0) {
+          logsListEl.innerHTML = `<p class="text-sm text-slate-500 text-center py-6">હજુ સુધી કોઈ લોગિન કે ફેરફાર નોંધાયેલ નથી.</p>`;
+        } else {
+          logsListEl.innerHTML = state.logs
+            .map((log) => {
+              const badgeColor =
+                log.action === 'લોગિન'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : log.action === 'લોગઆઉટ'
+                  ? 'bg-slate-200 text-slate-800'
+                  : 'bg-amber-100 text-amber-900';
+              return `
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-start justify-between gap-3">
+                  <div>
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                      <span class="px-2 py-0.5 rounded text-[11px] font-extrabold ${badgeColor}">${escapeHTML(log.action)}</span>
+                      <span class="text-xs font-extrabold text-slate-900">યુઝર: ${escapeHTML(log.user)}</span>
+                    </div>
+                    <p class="text-xs text-slate-700 font-medium">${escapeHTML(log.detail)}</p>
+                  </div>
+                  <span class="text-[11px] text-slate-400 shrink-0 text-right">${escapeHTML(log.timestamp)}</span>
+                </div>
+              `;
+            })
+            .join('');
+        }
+
+        // 3. Render Saved Attendance Dates with Edit & Delete
+        const datesListEl = document.getElementById('saved-dates-list');
+        if (savedDateKeys.length === 0) {
+          datesListEl.innerHTML = `<p class="text-sm text-slate-500 text-center py-6">કોઈ હાજરી રેકોર્ડ સેવ થયેલ નથી.</p>`;
+        } else {
+          datesListEl.innerHTML = savedDateKeys
+            .map((dateISO) => {
+              const dayRecords = state.attendance[dateISO] || {};
+              let pCount = 0;
+              let hCount = 0;
+              let aCount = 0;
+              Object.values(dayRecords).forEach((entry) => {
+                const st = typeof entry === 'string' ? entry : entry && entry.status;
+                if (st === 'P') pCount++;
+                else if (st === 'H') hCount++;
+                else if (st === 'A') aCount++;
+              });
+
+              return `
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-extrabold text-slate-900">${escapeHTML(formatGujaratiDate(dateISO))} <span class="text-xs font-normal text-slate-500">(${dateISO})</span></p>
+                    <p class="text-xs text-slate-600 mt-0.5">
+                      <span class="text-emerald-700 font-bold">${pCount} હાજર</span> &bull;
+                      <span class="text-amber-700 font-bold">${hCount} અડધો</span> &bull;
+                      <span class="text-red-700 font-bold">${aCount} ગેરહાજર</span>
+                    </p>
+                  </div>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button
+                      type="button"
+                      data-rec-open-date="${dateISO}"
+                      class="px-3 py-1.5 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs font-extrabold cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      data-rec-delete-date="${dateISO}"
+                      class="px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 text-xs font-extrabold cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              `;
+            })
+            .join('');
+        }
+      }
+
+      function setupRecordsEvents() {
+        const tbody = document.getElementById('master-workers-tbody');
+        const datesListEl = document.getElementById('saved-dates-list');
+        const exportBtn = document.getElementById('export-backup-btn');
+        const importInput = document.getElementById('import-backup-input');
+        const clearLogsBtn = document.getElementById('clear-logs-btn');
+        const clearAllBtn = document.getElementById('clear-all-records-btn');
+
+        // Master Worker Edit / Delete
+        tbody.addEventListener('click', (e) => {
+          const editBtn = e.target.closest('[data-rec-edit-worker]');
+          if (editBtn) {
+            const workerId = editBtn.dataset.recEditWorker;
+            const worker = state.workers.find((w) => w.id === workerId);
+            if (!worker) return;
+
+            switchTab('attendance');
+            document.getElementById('worker-edit-id').value = worker.id;
+            document.getElementById('worker-name').value = worker.name;
+            document.getElementById('worker-role').value = worker.role;
+            document.getElementById('worker-daily-rate').value = worker.dailyRate;
+            document.getElementById('worker-ot-rate').value = worker.otRate;
+            document.getElementById('worker-phone').value = worker.phone || '';
+            document.getElementById('worker-form-heading').innerHTML = `
+              <span class="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center text-xs font-black">✎</span>
+              <span>કારીગરની વિગત અને પગાર સુધારો: ${escapeHTML(worker.name)}</span>
+            `;
+            document.getElementById('worker-submit-btn').textContent = 'ફેરફાર સાચવો';
+            document.getElementById('cancel-edit-worker-btn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+          }
+
+          const delBtn = e.target.closest('[data-rec-delete-worker]');
+          if (delBtn) {
+            const workerId = delBtn.dataset.recDeleteWorker;
+            const worker = state.workers.find((w) => w.id === workerId);
+            if (!worker) return;
+
+            showConfirmModal(
+              'કારીગર કાયમ માટે ડિલીટ કરો?',
+              `શું તમે ખરેખર "${worker.name}" અને તેની બધી માહિતી ડિલીટ કરવા માંગો છો?`,
+              () => {
+                state.workers = state.workers.filter((w) => w.id !== workerId);
+                Object.keys(state.attendance).forEach((dKey) => {
+                  if (state.attendance[dKey]) delete state.attendance[dKey][workerId];
+                });
+                saveAttendance();
+                saveWorkers(`કારીગર "${worker.name}" અને તેના હાજરી રેકોર્ડ્સ ડિલીટ કર્યા.`);
+                renderRecordsPage();
+                showToast(`${worker.name} ની બધી માહિતી ડિલીટ થઈ ગઈ છે.`, 'info');
+              }
+            );
+          }
+        });
+
+        // Saved Attendance Date Edit / Delete
+        datesListEl.addEventListener('click', (e) => {
+          const openBtn = e.target.closest('[data-rec-open-date]');
+          if (openBtn) {
+            state.selectedDate = openBtn.dataset.recOpenDate;
+            switchTab('attendance');
+            showToast(`${state.selectedDate} ની હાજરી Edit કરવા માટે ખોલી છે.`, 'info');
+            return;
+          }
+
+          const delDateBtn = e.target.closest('[data-rec-delete-date]');
+          if (delDateBtn) {
+            const dateISO = delDateBtn.dataset.recDeleteDate;
+            showConfirmModal(
+              'તારીખનો હાજરી રેકોર્ડ ડિલીટ કરો?',
+              `શું તમે ખરેખર ${dateISO} ની બધી હાજરી માહિતી ડિલીટ કરવા માંગો છો?`,
+              () => {
+                delete state.attendance[dateISO];
+                saveAttendance(`તારીખ ${dateISO} નો હાજરી રેકોર્ડ ડિલીટ કર્યો.`);
+                renderRecordsPage();
+                showToast(`${dateISO} નો રેકોર્ડ ડિલીટ થઈ ગયો છે.`, 'info');
+              }
+            );
+          }
+        });
+
+        // Export Full JSON Backup
+        exportBtn.addEventListener('click', () => {
+          const backupPayload = {
+            app: 'Century Product - Karkhano Management',
+            exportedAt: new Date().toISOString(),
+            exportedBy: state.currentUser,
+            workers: state.workers,
+            attendance: state.attendance,
+            notes: state.notes,
+            logs: state.logs,
+          };
+          const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `Century_Karkhano_Backup_${getTodayISO()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          recordAuditLog('બેકઅપ', `પૂરો ડેટા બેકઅપ (${a.download}) ડાઉનલોડ કર્યો.`);
+          renderRecordsPage();
+          showToast('પૂરો બેકઅપ ડાઉનલોડ થઈ ગયો છે!');
+        });
+
+        // Import JSON Backup
+        importInput.addEventListener('change', (e) => {
+          const file = e.target.files && e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const parsed = JSON.parse(ev.target.result);
+              if (Array.isArray(parsed.workers)) state.workers = parsed.workers;
+              if (parsed.attendance && typeof parsed.attendance === 'object') state.attendance = parsed.attendance;
+              if (Array.isArray(parsed.notes)) state.notes = parsed.notes;
+              if (Array.isArray(parsed.logs)) state.logs = parsed.logs;
+
+              saveWorkers();
+              saveAttendance();
+              saveNotes();
+              recordAuditLog('બેકઅપ રિસ્ટોર', `ફાઇલ "${file.name}" માંથી બધા રેકોર્ડ્સ રિસ્ટોર કર્યા.`);
+              renderRecordsPage();
+              showToast('બેકઅપ ફાઇલમાંથી બધો ડેટા સેવ થઈ ગયો છે!');
+            } catch (err) {
+              showToast('ખોટી બેકઅપ ફાઇલ છે. કૃપા કરીને સાચી JSON ફાઇલ પસંદ કરો.', 'error');
+            } finally {
+              importInput.value = '';
+            }
+          };
+          reader.readAsText(file);
+        });
+
+        // Clear Activity Logs
+        clearLogsBtn.addEventListener('click', () => {
+          showConfirmModal(
+            'લોગિન હિસ્ટ્રી સાફ કરો?',
+            'શું તમે લોગિન અને ફેરફાર હિસ્ટ્રી લિસ્ટ સાફ કરવા માંગો છો? (કારીગરો અને હાજરી સેવ રહેશે)',
+            () => {
+              state.logs = [];
+              recordAuditLog('લોગ સાફ', `યુઝર "${state.currentUser}" એ જૂની હિસ્ટ્રી સાફ કરી.`);
+              renderRecordsPage();
+              showToast('હિસ્ટ્રી સાફ થઈ ગઈ છે.', 'info');
+            }
+          );
+        });
+
+        // Delete All Factory Records
+        clearAllBtn.addEventListener('click', () => {
+          showConfirmModal(
+            'બધા કારીગરો, હાજરી અને નોંધ ડિલીટ કરો?',
+            'ચેતવણી: આનાથી બધા કારીગરો, બધી હાજરી અને બધી નોંધ કાયમ માટે ડિલીટ થઈ જશે!',
+            () => {
+              state.workers = [];
+              state.attendance = {};
+              state.notes = [];
+              saveWorkers();
+              saveAttendance();
+              saveNotes();
+              recordAuditLog('બધો ડેટા ડિલીટ', `એડમિન "${state.currentUser}" એ બધા કારીગરો, હાજરી અને નોંધ ડિલીટ કર્યા.`);
+              renderRecordsPage();
+              showToast('બધા રેકોર્ડ્સ ડિલીટ થઈ ગયા છે.', 'info');
+            }
+          );
+        });
+      }
+
+      // -------------------------------------------------------------------
+      // 10. INITIALIZE APPLICATION ON DOM READY
       // -------------------------------------------------------------------
       window.addEventListener('DOMContentLoaded', () => {
         loadState();
         setupLoginEvents();
         setupNavigationEvents();
         setupAttendanceEvents();
+        setupMonthlyEvents();
         setupNotesEvents();
+        setupRecordsEvents();
         updateAuthUI();
       });
     })();
