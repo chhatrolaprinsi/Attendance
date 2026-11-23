@@ -3,7 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Century Karkhano" />
   <title>સેન્ચ્યુરી પ્રોડક્ટ — કારખાના મેનેજમેન્ટ</title>
+  <!-- Dynamic PWA Manifest & Home Screen Icon -->
+  <link id="pwa-manifest-link" rel="manifest" />
+  <link id="pwa-apple-icon" rel="apple-touch-icon" />
+  <link id="pwa-favicon" rel="icon" type="image/png" />
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- html2canvas & jsPDF for crisp Gujarati Unicode A4 PDF generation -->
@@ -216,6 +225,21 @@
             ઓટો-ફિલ કરો
           </button>
         </div>
+
+        <!-- Direct One-Tap Install App Banner on Login Screen -->
+        <div class="mt-4 pt-4 border-t border-slate-700/80 flex items-center justify-between gap-3 bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl">
+          <div class="text-xs text-slate-300">
+            <p class="font-extrabold text-amber-400">📲 મોબાઇલ / કોમ્પ્યુટરમાં એપ તરીકે ડાઉનલોડ કરો</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">હોમ સ્ક્રીન પર આઇકન આવશે અને ફુલ-સ્ક્રીન એપ જેમ ખુલશે.</p>
+          </div>
+          <button
+            type="button"
+            data-install-app-trigger
+            class="px-3.5 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition shrink-0 cursor-pointer shadow-xs"
+          >
+            એપ ઇન્સ્ટોલ કરો
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -278,6 +302,15 @@
 
         <!-- Cloud Sync Status, Active Login Badge & Logout Button -->
         <div class="flex items-center gap-2">
+          <button
+            type="button"
+            data-install-app-trigger
+            class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold transition cursor-pointer shadow-xs"
+            title="મોબાઇલ અથવા કોમ્પ્યુટરમાં એપ તરીકે ઇન્સ્ટોલ કરો"
+          >
+            <span>📲</span>
+            <span class="hidden sm:inline">એપ ડાઉનલોડ</span>
+          </button>
           <div id="cloud-sync-badge" class="hidden lg:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-800 border border-amber-500/40 text-[11px] font-bold text-amber-300" title="એકસાથે બધા મોબાઇલમાં લાઇવ ડેટા સિંક">
             <span id="cloud-sync-dot" class="w-2 h-2 rounded-full bg-amber-400"></span>
             <span id="cloud-sync-label">લાઇવ ક્લાઉડ કનેક્ટ...</span>
@@ -715,6 +748,28 @@
       <!-- PAGE E: SAVED RECORDS, LOGIN LOGS & ADMIN FULL EDIT/DELETE        -->
       <!-- ================================================================= -->
       <section id="page-records" class="hidden space-y-6">
+        <!-- Install as Mobile / Desktop App Guide Banner -->
+        <div class="bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 rounded-2xl p-5 sm:p-6 shadow-md">
+          <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            <div>
+              <span class="inline-block px-2.5 py-1 rounded-md bg-slate-950 text-amber-400 text-xs font-extrabold mb-1.5">
+                📲 APP DOWNLOAD &amp; INSTALL (એન્ડ્રોઇડ / iPhone / PC)
+              </span>
+              <h3 class="text-lg font-extrabold text-slate-950">આ વેબસાઇટને સીધી મોબાઇલ એપ તરીકે ડાઉનલોડ કેવી રીતે કરવી?</h3>
+              <p class="text-xs sm:text-sm font-bold text-slate-900 mt-1">
+                1) નીચેનું <strong>"એપ ઇન્સ્ટોલ કરો"</strong> બટન દબાવો &bull; 2) અથવા Chrome માં ઉપર <strong>3 ટપકાં (⋮) &rarr; Add to Home screen / Install app</strong> દબાવો &bull; 3) iPhone (Safari) માં નીચે <strong>Share &rarr; Add to Home Screen</strong> દબાવો.
+              </p>
+            </div>
+            <button
+              type="button"
+              data-install-app-trigger
+              class="px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-800 text-amber-400 text-xs sm:text-sm font-extrabold shadow-lg transition shrink-0 cursor-pointer"
+            >
+              📲 એપ ઇન્સ્ટોલ કરો
+            </button>
+          </div>
+        </div>
+
         <!-- Multi-User Live Cloud Sync Banner -->
         <div class="bg-slate-900 text-white border-2 border-amber-500/60 rounded-2xl p-5 sm:p-6 shadow-md">
           <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -965,6 +1020,139 @@
 
     (function () {
       'use strict';
+
+      // -------------------------------------------------------------------
+      // 0. PWA APP ICON, WEB MANIFEST & ONE-TAP INSTALL PROMPT HANDLER
+      // -------------------------------------------------------------------
+      let deferredInstallPrompt = null;
+
+      function setupPWAManifestAndIcons() {
+        try {
+          // Render the exact Century Karkhano C-Clock + Industrial Gear SVG Emblem as a crisp 512x512 PNG App Icon
+          const svgMarkup = `
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+              <defs>
+                <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#1e293b" />
+                  <stop offset="100%" stop-color="#090d16" />
+                </linearGradient>
+                <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FDE68A" />
+                  <stop offset="45%" stop-color="#F59E0B" />
+                  <stop offset="100%" stop-color="#B45309" />
+                </linearGradient>
+                <linearGradient id="silverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F8FAFC" />
+                  <stop offset="50%" stop-color="#CBD5E1" />
+                  <stop offset="100%" stop-color="#64748B" />
+                </linearGradient>
+              </defs>
+              <!-- App Icon Rounded Background -->
+              <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+              <rect x="14" y="14" width="484" height="484" rx="100" fill="none" stroke="url(#goldGrad)" stroke-width="10" opacity="0.65" />
+
+              <!-- Centered Century Karkhano Clock + Gear Emblem -->
+              <g transform="translate(86, 30) scale(2.83)">
+                <!-- Left Thick 'C' Arc in Brushed Gold -->
+                <path d="M 60 16 A 44 44 0 1 0 60 104 L 60 88 A 28 28 0 1 1 60 32 Z" fill="url(#goldGrad)" />
+                <!-- Right Industrial Gear Half in Gold -->
+                <path d="M 62 10 L 68 10 L 70 18 A 42 42 0 0 1 82 23 L 89 18 L 94 23 L 89 30 A 42 42 0 0 1 96 42 L 104 44 L 104 51 L 96 53 A 42 42 0 0 1 96 67 L 104 69 L 104 76 L 96 78 A 42 42 0 0 1 89 90 L 94 97 L 89 102 L 82 97 A 42 42 0 0 1 70 102 L 68 110 L 62 110 L 62 94 A 34 34 0 0 0 62 26 Z" fill="url(#goldGrad)" />
+                <!-- Inner Silver Accent Ring -->
+                <path d="M 62 29 A 31 31 0 0 1 62 91" fill="none" stroke="url(#silverGrad)" stroke-width="3.5" stroke-linecap="round" />
+                <!-- Clock Tick Marks -->
+                <g stroke="url(#goldGrad)" stroke-width="2.2" stroke-linecap="round">
+                  <line x1="60" y1="34" x2="60" y2="39" />
+                  <line x1="73" y1="38" x2="70.5" y2="42" />
+                  <line x1="82" y1="47" x2="78" y2="49.5" />
+                  <line x1="86" y1="60" x2="81" y2="60" />
+                  <line x1="82" y1="73" x2="78" y2="70.5" />
+                  <line x1="73" y1="82" x2="70.5" y2="78" />
+                  <line x1="60" y1="86" x2="60" y2="81" />
+                  <line x1="47" y1="82" x2="49.5" y2="78" />
+                  <line x1="38" y1="73" x2="42" y2="70.5" />
+                  <line x1="34" y1="60" x2="39" y2="60" />
+                  <line x1="38" y1="47" x2="42" y2="49.5" />
+                  <line x1="47" y1="38" x2="49.5" y2="42" />
+                </g>
+                <!-- Clock Hands (8 to 5 Shift) -->
+                <line x1="60" y1="60" x2="60" y2="38" stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round" />
+                <line x1="60" y1="60" x2="44" y2="70" stroke="url(#goldGrad)" stroke-width="3.5" stroke-linecap="round" />
+                <circle cx="60" cy="60" r="4.5" fill="url(#goldGrad)" stroke="#0f172a" stroke-width="1.5" />
+              </g>
+
+              <!-- Brand Typography at Bottom of Icon -->
+              <text x="256" y="425" text-anchor="middle" fill="url(#goldGrad)" font-family="Inter, sans-serif" font-weight="800" font-size="52" letter-spacing="3">CENTURY</text>
+              <text x="256" y="466" text-anchor="middle" fill="#E2E8F0" font-family="Inter, sans-serif" font-weight="700" font-size="28" letter-spacing="4">KARKHANO</text>
+            </svg>
+          `.trim();
+
+          const svgBlob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
+          const svgUrl = URL.createObjectURL(svgBlob);
+          const img = new Image();
+
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 512;
+            canvas.height = 512;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, 512, 512);
+            URL.revokeObjectURL(svgUrl);
+
+            const iconDataUrl = canvas.toDataURL('image/png');
+            const appleIcon = document.getElementById('pwa-apple-icon');
+            const favIcon = document.getElementById('pwa-favicon');
+            if (appleIcon) appleIcon.href = iconDataUrl;
+            if (favIcon) favIcon.href = iconDataUrl;
+
+            const manifestObj = {
+              name: 'સેન્ચ્યુરી પ્રોડક્ટ — કારખાના મેનેજમેન્ટ',
+              short_name: 'Century Karkhano',
+              description: 'સેન્ચ્યુરી કારખાના હાજરી, ઓવરટાઇમ, માસિક PDF અને નોંધ એપ',
+              start_url: window.location.href,
+              display: 'standalone',
+              background_color: '#0f172a',
+              theme_color: '#0f172a',
+              icons: [
+                { src: iconDataUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+                { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+              ],
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+            const manifestUrl = URL.createObjectURL(manifestBlob);
+            const manifestLink = document.getElementById('pwa-manifest-link');
+            if (manifestLink) manifestLink.href = manifestUrl;
+          };
+
+          img.src = svgUrl;
+        } catch (err) {
+          console.warn('PWA icon generation skipped:', err);
+        }
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+          e.preventDefault();
+          deferredInstallPrompt = e;
+        });
+
+        document.querySelectorAll('[data-install-app-trigger]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            if (deferredInstallPrompt) {
+              deferredInstallPrompt.prompt();
+              const choice = await deferredInstallPrompt.userChoice;
+              deferredInstallPrompt = null;
+              if (choice && choice.outcome === 'accepted') {
+                showToast('એપ ઇન્સ્ટોલ થઈ રહી છે! તમારા ફોનની હોમ સ્ક્રીન પર આઇકન આવી જશે.');
+              }
+            } else {
+              showConfirmModal(
+                'એપ ઇન્સ્ટોલ કરવાની સરળ રીત',
+                '1) જો તમે એન્ડ્રોઇડ Chrome માં છો: ઉપર જમણી બાજુ 3 ટપકાં (⋮) દબાવો અને "Add to Home screen" અથવા "Install app" દબાવો.\n\n2) જો તમે iPhone (Safari) માં છો: નીચે Share બટન દબાવી "Add to Home Screen" દબાવો.\n\n3) જો તમે કોમ્પ્યુટર Chrome માં છો: એડ્રેસ બારની જમણી બાજુ Install આઇકન દબાવો.',
+                () => {}
+              );
+            }
+          });
+        });
+      }
 
       // -------------------------------------------------------------------
       // 1. CONSTANTS, FIREBASE INITIALIZATION & SHARED CLOUD PATHS
@@ -3360,6 +3548,7 @@
       // 10. INITIALIZE APPLICATION & REAL-TIME CLOUD SYNC ON DOM READY
       // -------------------------------------------------------------------
       window.addEventListener('DOMContentLoaded', async () => {
+        setupPWAManifestAndIcons();
         setupLoginEvents();
         setupNavigationEvents();
         setupAttendanceEvents();
