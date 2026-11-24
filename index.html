@@ -519,8 +519,9 @@
                 type="number"
                 id="worker-daily-rate"
                 min="0"
-                step="10"
-                placeholder="દા.ત. 700"
+                step="any"
+                inputmode="decimal"
+                placeholder="દા.ત. 725.50"
                 required
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold"
               />
@@ -531,8 +532,9 @@
                 type="number"
                 id="worker-ot-rate"
                 min="0"
-                step="5"
-                placeholder="દા.ત. 90"
+                step="any"
+                inputmode="decimal"
+                placeholder="દા.ત. 25.7"
                 required
                 class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white focus:border-amber-500 focus:outline-none text-sm font-bold"
               />
@@ -1231,8 +1233,19 @@
       }
 
       function formatRupees(val) {
-        const num = Math.round(Number(val) || 0);
-        return '₹' + num.toLocaleString('en-IN');
+        const num = Number(val) || 0;
+        const hasDecimals = Math.abs(num % 1) > 0.0001;
+        return (
+          '₹' +
+          num.toLocaleString('en-IN', {
+            minimumFractionDigits: hasDecimals ? 2 : 0,
+            maximumFractionDigits: 2,
+          })
+        );
+      }
+
+      function roundMoney(val) {
+        return Math.round((Number(val) || 0) * 100) / 100;
       }
 
       function escapeHTML(str) {
@@ -1427,14 +1440,14 @@
         const dailyRate = Number(worker.dailyRate) || 0;
         const otRate = Number(worker.otRate) || 0;
         let shiftPay = 0;
-        if (rec.status === 'P') shiftPay = dailyRate;
-        else if (rec.status === 'H') shiftPay = Math.round(dailyRate * 0.5);
+        if (rec.status === 'P') shiftPay = roundMoney(dailyRate);
+        else if (rec.status === 'H') shiftPay = roundMoney(dailyRate * 0.5);
 
-        const otPay = Math.round((Number(rec.otHours) || 0) * otRate);
+        const otPay = roundMoney((Number(rec.otHours) || 0) * otRate);
         return {
           shiftPay,
           otPay,
-          totalPay: shiftPay + otPay,
+          totalPay: roundMoney(shiftPay + otPay),
         };
       }
 
@@ -1644,12 +1657,14 @@
           onSnapshot(
             getSharedCollection('karkhano_attendance'),
             (snap) => {
+              const cloudAttendance = {};
               snap.forEach((docSnap) => {
                 const data = docSnap.data();
                 if (data && data.dateISO && data.records) {
-                  state.attendance[data.dateISO] = data.records;
+                  cloudAttendance[data.dateISO] = data.records;
                 }
               });
+              state.attendance = { ...state.attendance, ...cloudAttendance };
               persistLocalCache();
               refreshActiveView();
             },
@@ -1928,10 +1943,10 @@
           }
 
           regularHours += regHrsDay;
-          totalOtHours += rec.otHours;
-          totalRegularPay += earnings.shiftPay;
-          totalOtPay += earnings.otPay;
-          grandTotalPay += earnings.totalPay;
+          totalOtHours = Math.round((totalOtHours + rec.otHours) * 100) / 100;
+          totalRegularPay = roundMoney(totalRegularPay + earnings.shiftPay);
+          totalOtPay = roundMoney(totalOtPay + earnings.otPay);
+          grandTotalPay = roundMoney(grandTotalPay + earnings.totalPay);
 
           dayRows.push({
             dayNumber: d,
@@ -1940,7 +1955,6 @@
             weekdayGu,
             status: rec.status,
             statusLabelGu,
-            regHrsDay,
             otHours: rec.otHours,
             shiftPay: earnings.shiftPay,
             otPay: earnings.otPay,
@@ -2154,7 +2168,6 @@
             scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
-            logging: false,
           });
 
           const imgData = canvas.toDataURL('image/jpeg', 0.96);
@@ -2657,12 +2670,13 @@
                       <input
                         type="number"
                         min="0"
-                        max="16"
-                        step="0.5"
+                        max="24"
+                        step="any"
+                        inputmode="decimal"
                         value="${rec.otHours}"
                         data-worker-id="${worker.id}"
                         aria-label="ઓવરટાઇમ કલાક"
-                        class="ot-input w-14 text-center bg-white border border-slate-300 rounded-lg py-1 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-amber-500"
+                        class="ot-input w-16 text-center bg-white border border-slate-300 rounded-lg py-1 text-sm font-extrabold text-slate-900 focus:outline-none focus:border-amber-500"
                       />
                       <button
                         type="button"
@@ -2760,9 +2774,9 @@
         dailyRateInput.addEventListener('input', () => {
           const editId = document.getElementById('worker-edit-id').value;
           if (!editId) {
-            const dailyVal = Number(dailyRateInput.value);
-            if (dailyVal > 0) {
-              otRateInput.value = Math.round(dailyVal / 8);
+            const dailyVal = parseFloat(dailyRateInput.value);
+            if (!isNaN(dailyVal) && dailyVal > 0) {
+              otRateInput.value = roundMoney(dailyVal / 8);
             }
           }
         });
@@ -2772,8 +2786,8 @@
           const editId = document.getElementById('worker-edit-id').value;
           const name = document.getElementById('worker-name').value.trim();
           const role = document.getElementById('worker-role').value;
-          const dailyRate = Math.max(0, Number(dailyRateInput.value) || 0);
-          const otRate = Math.max(0, Number(otRateInput.value) || 0);
+          const dailyRate = Math.max(0, roundMoney(parseFloat(dailyRateInput.value) || 0));
+          const otRate = Math.max(0, roundMoney(parseFloat(otRateInput.value) || 0));
           const phone = document.getElementById('worker-phone').value.trim();
 
           if (!name) {
@@ -2930,7 +2944,8 @@
           if (!otInput) return;
 
           const workerId = otInput.dataset.workerId;
-          const val = Math.max(0, Math.min(16, Number(otInput.value) || 0));
+          const parsedVal = parseFloat(otInput.value);
+          const val = Math.max(0, Math.min(24, isNaN(parsedVal) ? 0 : Math.round(parsedVal * 100) / 100));
 
           if (!state.attendance[state.selectedDate]) {
             state.attendance[state.selectedDate] = {};
@@ -3681,6 +3696,16 @@
         setupRecordsEvents();
         updateAuthUI();
         await initCloudSync();
+
+        // Flush local cache safely whenever app is minimized or closed on mobile/PC
+        window.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'hidden') {
+            persistLocalCache();
+          }
+        });
+        window.addEventListener('beforeunload', () => {
+          persistLocalCache();
+        });
       });
     })();
   </script>
