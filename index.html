@@ -139,12 +139,6 @@
           <h1 class="text-2xl font-extrabold tracking-tight text-white mt-0.5">સેન્ચ્યુરી પ્રોડક્ટ</h1>
           <p class="text-xs text-slate-400 mt-0.5">સેન્ચ્યુરી કારખાનું &bull; હાજરી, ઓવરટાઇમ અને નોંધ</p>
         </div>
-          <div>
-            <span class="inline-block text-xs font-bold tracking-wider text-amber-400">કારખાના ERP સિસ્ટમ</span>
-            <h1 class="text-2xl font-extrabold tracking-tight text-white">સેન્ચ્યુરી પ્રોડક્ટ</h1>
-            <p class="text-xs text-slate-400">કારખાના હાજરી, ઓવરટાઇમ અને નોંધ</p>
-          </div>
-        </div>
 
         <!-- Error Alert Box -->
         <div id="login-error" class="hidden mb-5 p-3.5 rounded-xl bg-red-950/80 border border-red-500/60 text-red-200 text-sm flex items-start gap-2.5">
@@ -1113,17 +1107,20 @@
             if (appleIcon) appleIcon.href = iconDataUrl;
             if (favIcon) favIcon.href = iconDataUrl;
 
+            const baseCleanUrl = window.location.href.split('#')[0];
             const manifestObj = {
               name: 'સેન્ચ્યુરી પ્રોડક્ટ — કારખાના મેનેજમેન્ટ',
               short_name: 'Century Karkhano',
               description: 'સેન્ચ્યુરી કારખાના હાજરી, ઓવરટાઇમ, માસિક PDF અને નોંધ એપ',
-              start_url: window.location.href,
+              start_url: baseCleanUrl,
+              scope: './',
               display: 'standalone',
+              orientation: 'any',
               background_color: '#0f172a',
               theme_color: '#0f172a',
               icons: [
-                { src: iconDataUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
-                { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
+                { src: iconDataUrl, sizes: '192x192', type: 'image/png', purpose: 'any' },
+                { src: iconDataUrl, sizes: '512x512', type: 'image/png', purpose: 'any' },
               ],
             };
 
@@ -1168,7 +1165,7 @@
       // -------------------------------------------------------------------
       const ADMIN_ID = 'admin';
       const ADMIN_PASS = 'admin@123';
-      const SESSION_STORAGE_KEY = 'century_karkhano_saved_login_v1';
+      let rememberedSession = null;
 
       const appId = typeof __app_id !== 'undefined' ? __app_id : 'century-product-karkhano-live';
       const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
@@ -1181,137 +1178,8 @@
       let hasSeededDefaults = false;
 
       // -------------------------------------------------------------------
-      // 2. DATE, CURRENCY, TOAST & MODAL HELPER FUNCTIONS
+      // 3. CENTRAL APPLICATION STATE & REAL-TIME CLOUD SYNC
       // -------------------------------------------------------------------
-      const GUJARATI_MONTHS = [
-        'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
-        'જુલાઈ', 'ઓગસ્ટ', 'સપ્ટેમ્બર', 'ઓક્ટોબર', 'નવેમ્બર', 'ડિસેમ્બર',
-      ];
-      const GUJARATI_WEEKDAYS = [
-        'રવિવાર', 'સોમવાર', 'મંગળવાર', 'બુધવાર', 'ગુરુવાર', 'શુક્રવાર', 'શનિવાર',
-      ];
-
-      function getTodayISO() {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const d = String(now.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
-      }
-
-      function getCurrentMonthISO() {
-        return getTodayISO().slice(0, 7);
-      }
-
-      function getGujaratiWeekday(dateObj) {
-        return GUJARATI_WEEKDAYS[dateObj.getDay()] || '';
-      }
-
-      function formatGujaratiDate(dateISO) {
-        if (!dateISO || !dateISO.includes('-')) return dateISO || '';
-        const [y, m, d] = dateISO.split('-').map(Number);
-        const dt = new Date(y, m - 1, d);
-        const monthName = GUJARATI_MONTHS[m - 1] || '';
-        const weekday = getGujaratiWeekday(dt);
-        return `${d} ${monthName} ${y} (${weekday})`;
-      }
-
-      function formatGujaratiMonthYear(monthISO) {
-        if (!monthISO || !monthISO.includes('-')) return monthISO || '';
-        const [y, m] = monthISO.split('-').map(Number);
-        return `${GUJARATI_MONTHS[m - 1] || ''} ${y}`;
-      }
-
-      function getGujaratiTimestamp() {
-        const now = new Date();
-        const d = String(now.getDate()).padStart(2, '0');
-        const m = String(now.getMonth() + 1).padStart(2, '0');
-        const y = now.getFullYear();
-        const hh = String(now.getHours()).padStart(2, '0');
-        const mm = String(now.getMinutes()).padStart(2, '0');
-        return `${d}/${m}/${y} ${hh}:${mm}`;
-      }
-
-      function formatRupees(val) {
-        const num = Number(val) || 0;
-        const hasDecimals = Math.abs(num % 1) > 0.0001;
-        return (
-          '₹' +
-          num.toLocaleString('en-IN', {
-            minimumFractionDigits: hasDecimals ? 2 : 0,
-            maximumFractionDigits: 2,
-          })
-        );
-      }
-
-      function roundMoney(val) {
-        return Math.round((Number(val) || 0) * 100) / 100;
-      }
-
-      function escapeHTML(str) {
-        return String(str || '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-      }
-
-      function showToast(message, type = 'success') {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-
-        const toast = document.createElement('div');
-        const colors =
-          type === 'error'
-            ? 'bg-red-600 text-white border-red-400'
-            : type === 'info'
-            ? 'bg-slate-900 text-amber-300 border-amber-500/50'
-            : 'bg-emerald-600 text-white border-emerald-400';
-
-        toast.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs sm:text-sm font-bold transition-all duration-300 ${colors}`;
-        toast.textContent = message;
-        container.appendChild(toast);
-
-        setTimeout(() => {
-          toast.style.opacity = '0';
-          setTimeout(() => toast.remove(), 300);
-        }, 3200);
-      }
-
-      function showConfirmModal(title, message, onConfirm) {
-        const modal = document.getElementById('confirm-modal');
-        const titleEl = document.getElementById('confirm-title');
-        const msgEl = document.getElementById('confirm-message');
-        const cancelBtn = document.getElementById('confirm-cancel-btn');
-        const okBtn = document.getElementById('confirm-ok-btn');
-
-        titleEl.textContent = title;
-        msgEl.textContent = message;
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-
-        const cleanup = () => {
-          modal.classList.add('hidden');
-          modal.classList.remove('flex');
-          cancelBtn.onclick = null;
-          okBtn.onclick = null;
-        };
-
-        cancelBtn.onclick = cleanup;
-        okBtn.onclick = async () => {
-          cleanup();
-          if (typeof onConfirm === 'function') {
-            await onConfirm();
-          }
-        };
-      }
-
-      // -------------------------------------------------------------------
-      // 3. CENTRAL APPLICATION STATE & REAL-TIME CLOUD / LOCAL STORAGE SYNC
-      // -------------------------------------------------------------------
-      const LOCAL_CACHE_KEY = 'century_karkhano_offline_cache_v2';
-
       const state = {
         isAuthenticated: false,
         currentUser: ADMIN_ID,
@@ -1328,37 +1196,12 @@
       };
 
       function persistLocalCache() {
-        try {
-          window.localStorage.setItem(
-            LOCAL_CACHE_KEY,
-            JSON.stringify({
-              workers: state.workers,
-              attendance: state.attendance,
-              notes: state.notes,
-              logs: state.logs,
-              lastSavedAt: state.lastSavedAt,
-            })
-          );
-        } catch (err) {
-          console.warn('Local cache write skipped:', err);
-        }
+        // In-memory + Firestore cloud persistence only (no blocking storage calls on PWA startup)
+        state.lastSavedAt = getGujaratiTimestamp();
       }
 
       function loadLocalCache() {
-        try {
-          const raw = window.localStorage.getItem(LOCAL_CACHE_KEY);
-          if (!raw) return false;
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed.workers)) state.workers = parsed.workers;
-          if (parsed.attendance && typeof parsed.attendance === 'object') state.attendance = parsed.attendance;
-          if (Array.isArray(parsed.notes)) state.notes = parsed.notes;
-          if (Array.isArray(parsed.logs)) state.logs = parsed.logs;
-          if (parsed.lastSavedAt) state.lastSavedAt = parsed.lastSavedAt;
-          return true;
-        } catch (err) {
-          console.warn('Local cache read skipped:', err);
-          return false;
-        }
+        return false;
       }
 
       function seedStarterDataIfEmpty() {
@@ -1603,8 +1446,6 @@
       }
 
       async function initCloudSync() {
-        loadLocalCache();
-
         if (!rawFirebaseConfig) {
           seedStarterDataIfEmpty();
           updateCloudBadge(false);
@@ -1618,13 +1459,19 @@
           auth = getAuth(fbApp);
           db = getFirestore(fbApp);
 
-          if (initialAuthToken) {
-            const cred = await signInWithCustomToken(auth, initialAuthToken);
-            cloudUser = cred.user;
-          } else {
-            const cred = await signInAnonymously(auth);
-            cloudUser = cred.user;
-          }
+          // Non-blocking auth with 4-second timeout so installed PWA never hangs on slow mobile network
+          const authPromise = initialAuthToken
+            ? signInWithCustomToken(auth, initialAuthToken)
+            : signInAnonymously(auth);
+
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Cloud auth timeout')), 4000)
+          );
+
+          const cred = await Promise.race([authPromise, timeoutPromise]);
+          cloudUser = cred.user;
+
+          if (!cloudUser) return;
 
           cloudReady = true;
           updateCloudBadge(true, cloudUser ? cloudUser.uid : 'connected');
@@ -1709,28 +1556,37 @@
       }
 
       // -------------------------------------------------------------------
-      // 4. AUTHENTICATION LOGIC (ONE-TIME LOGIN REMEMBERED ACROSS LAUNCHES)
+      // 4. AUTHENTICATION LOGIC (NON-BLOCKING SESSION & ONE-TIME LINK)
       // -------------------------------------------------------------------
       function savePersistentLoginSession(userDisplayName) {
+        rememberedSession = {
+          isAuthenticated: true,
+          currentUser: userDisplayName || ADMIN_ID,
+          loggedInAt: Date.now(),
+        };
         try {
-          window.localStorage.setItem(
-            SESSION_STORAGE_KEY,
-            JSON.stringify({
-              isAuthenticated: true,
-              currentUser: userDisplayName || ADMIN_ID,
-              loggedInAt: Date.now(),
-            })
-          );
+          if (window.history && window.history.replaceState) {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.set('autologin', '1');
+            cleanUrl.searchParams.set('user', userDisplayName || ADMIN_ID);
+            window.history.replaceState({}, '', cleanUrl.toString());
+          }
         } catch (err) {
-          console.warn('Could not persist login state:', err);
+          // Ignore history URL update if restricted in sandboxed WebView
         }
       }
 
       function clearPersistentLoginSession() {
+        rememberedSession = null;
         try {
-          window.localStorage.removeItem(SESSION_STORAGE_KEY);
+          if (window.history && window.history.replaceState) {
+            const cleanUrl = new URL(window.location.href);
+            cleanUrl.searchParams.delete('autologin');
+            cleanUrl.searchParams.delete('user');
+            window.history.replaceState({}, '', cleanUrl.toString());
+          }
         } catch (err) {
-          console.warn('Could not clear login state:', err);
+          // Ignore history URL update if restricted
         }
       }
 
@@ -1741,20 +1597,17 @@
             const sharedStaffName = urlParams.get('user') || 'કારખાના સ્ટાફ (admin)';
             state.isAuthenticated = true;
             state.currentUser = sharedStaffName;
-            savePersistentLoginSession(sharedStaffName);
+            rememberedSession = { isAuthenticated: true, currentUser: sharedStaffName };
             return true;
           }
 
-          const raw = window.localStorage.getItem(SESSION_STORAGE_KEY);
-          if (!raw) return false;
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.isAuthenticated === true) {
+          if (rememberedSession && rememberedSession.isAuthenticated === true) {
             state.isAuthenticated = true;
-            state.currentUser = parsed.currentUser || ADMIN_ID;
+            state.currentUser = rememberedSession.currentUser || ADMIN_ID;
             return true;
           }
         } catch (err) {
-          console.warn('Could not restore login state:', err);
+          console.warn('Session check fallback:', err);
         }
         return false;
       }
@@ -3685,28 +3538,36 @@
       // -------------------------------------------------------------------
       // 10. INITIALIZE APPLICATION & REAL-TIME CLOUD SYNC ON DOM READY
       // -------------------------------------------------------------------
-      window.addEventListener('DOMContentLoaded', async () => {
-        restorePersistentLoginSession();
-        setupPWAManifestAndIcons();
-        setupLoginEvents();
-        setupNavigationEvents();
-        setupAttendanceEvents();
-        setupMonthlyEvents();
-        setupNotesEvents();
-        setupRecordsEvents();
-        updateAuthUI();
-        await initCloudSync();
+      function bootApp() {
+        try {
+          restorePersistentLoginSession();
+          setupPWAManifestAndIcons();
+          setupLoginEvents();
+          setupNavigationEvents();
+          setupAttendanceEvents();
+          setupMonthlyEvents();
+          setupNotesEvents();
+          setupRecordsEvents();
+          updateAuthUI();
+          // Run cloud sync asynchronously so UI unlocks immediately on app icon tap
+          initCloudSync().catch((err) => {
+            console.warn('Background cloud sync fallback:', err);
+            seedStarterDataIfEmpty();
+            updateCloudBadge(false);
+            refreshActiveView();
+          });
+        } catch (bootErr) {
+          console.error('App boot recovery:', bootErr);
+          const loginView = document.getElementById('login-view');
+          if (loginView) loginView.classList.remove('hidden');
+        }
+      }
 
-        // Flush local cache safely whenever app is minimized or closed on mobile/PC
-        window.addEventListener('visibilitychange', () => {
-          if (document.visibilityState === 'hidden') {
-            persistLocalCache();
-          }
-        });
-        window.addEventListener('beforeunload', () => {
-          persistLocalCache();
-        });
-      });
+      if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', bootApp);
+      } else {
+        bootApp();
+      }
     })();
   </script>
 </body>
