@@ -1,0 +1,25 @@
+{
+"name": "Century Karkhano — સેન્ચ્યુરી પ્રોડક્ટ",
+"short_name": "Century Karkhano",
+"description": "સેન્ચ્યુરી પ્રોડક્ટ કારખાના હાજરી, ઓવરટાઇમ, પગાર PDF અને નોંધ મેનેજમેન્ટ એપ",
+"start_url": "./index.html",
+"scope": "./",
+"display": "standalone",
+"orientation": "portrait",
+"background_color": "#0f172a",
+"theme_color": "#0f172a",
+"icons": [
+{
+"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%230f172a'/%3E%3Cpath d='M60 16A44 44 0 1 0 60 104L60 88A28 28 0 1 1 60 32Z' fill='%23f59e0b'/%3E%3Cpath d='M62 10h6l2 8a42 42 0 0 1 12 5l7-5 5 5-5 7a42 42 0 0 1 7 12l8 2v7l-8 2a42 42 0 0 1 0 14l8 2v7l-8 2a42 42 0 0 1-7 12l5 7-5 5-7-5a42 42 0 0 1-12 5l-2 8h-6V94a34 34 0 0 0 0-68Z' fill='%23d97706'/%3E%3Cline x1='60' y1='60' x2='60' y2='38' stroke='%23fbbf24' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='60' y1='60' x2='44' y2='70' stroke='%23fbbf24' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='60' r='4.5' fill='%23fbbf24'/%3E%3C/svg%3E",
+"sizes": "192x192",
+"type": "image/svg+xml",
+"purpose": "any"
+},
+{
+"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%230f172a'/%3E%3Cpath d='M60 16A44 44 0 1 0 60 104L60 88A28 28 0 1 1 60 32Z' fill='%23f59e0b'/%3E%3Cpath d='M62 10h6l2 8a42 42 0 0 1 12 5l7-5 5 5-5 7a42 42 0 0 1 7 12l8 2v7l-8 2a42 42 0 0 1 0 14l8 2v7l-8 2a42 42 0 0 1-7 12l5 7-5 5-7-5a42 42 0 0 1-12 5l-2 8h-6V94a34 34 0 0 0 0-68Z' fill='%23d97706'/%3E%3Cline x1='60' y1='60' x2='60' y2='38' stroke='%23fbbf24' stroke-width='4' stroke-linecap='round'/%3E%3Cline x1='60' y1='60' x2='44' y2='70' stroke='%23fbbf24' stroke-width='4' stroke-linecap='round'/%3E%3Ccircle cx='60' cy='60' r='4.5' fill='%23fbbf24'/%3E%3C/svg%3E",
+"sizes": "512x512",
+"type": "image/svg+xml",
+"purpose": "any"
+}
+]
+}
