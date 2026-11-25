@@ -1,14 +1,10 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
 // =========================================================================
-// 1. DATE, CURRENCY & HELPER UTILITIES
+// 1. DATE, CURRENCY & HELPER UTILITIES (FAST OFFLINE-FIRST ENGINE)
 // =========================================================================
 const ADMIN_ID = 'admin';
 const ADMIN_PASS = 'admin@123';
-const STORAGE_KEY = 'century_karkhano_v3_data';
-const SESSION_KEY = 'century_karkhano_v3_session';
+const STORAGE_KEY = 'century_karkhano_v4_data';
+const SESSION_KEY = 'century_karkhano_v4_session';
 
 const GUJARATI_MONTHS = [
   'જાન્યુઆરી', 'ફેબ્રુઆરી', 'માર્ચ', 'એપ્રિલ', 'મે', 'જૂન',
@@ -156,14 +152,6 @@ const state = {
   logs: [],
 };
 
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'century-product-karkhano-live';
-const rawFirebaseConfig = typeof __firebase_config !== 'undefined' ? __firebase_config : null;
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-
-let db = null;
-let auth = null;
-let cloudUser = null;
-let cloudReady = false;
 let deferredInstallPrompt = null;
 
 function saveToDeviceStorage() {
@@ -182,6 +170,180 @@ function saveToDeviceStorage() {
   } catch (err) {
     console.warn('Storage write skipped:', err);
   }
+}
+
+function loadFromDeviceStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed.workers)) state.workers = parsed.workers;
+      if (parsed.attendance && typeof parsed.attendance === 'object') state.attendance = parsed.attendance;
+      if (Array.isArray(parsed.notes)) state.notes = parsed.notes;
+      if (Array.isArray(parsed.logs)) state.logs = parsed.logs;
+      if (parsed.lastSavedAt) state.lastSavedAt = parsed.lastSavedAt;
+      return true;
+    }
+  } catch (err) {
+    console.warn('Storage read skipped:', err);
+  }
+  return false;
+}
+
+function seedStarterDataIfEmpty() {
+  if (state.workers.length > 0 || state.notes.length > 0) return;
+  const today = getTodayISO();
+  state.workers = [
+    {
+      id: 'w_demo_1',
+      name: 'રમેશભાઈ પટેલ',
+      role: 'મશીન ઓપરેટર',
+      dailyRate: 800,
+      otRate: 100,
+      phone: '98250 11223',
+      savedBy: 'admin',
+      createdAtMs: Date.now() - 3000,
+    },
+    {
+      id: 'w_demo_2',
+      name: 'સુરેશભાઈ પ્રજાપતિ',
+      role: 'કારીગર',
+      dailyRate: 700,
+      otRate: 90,
+      phone: '98790 44556',
+      savedBy: 'admin',
+      createdAtMs: Date.now() - 2000,
+    },
+    {
+      id: 'w_demo_3',
+      name: 'મહેશભાઈ ઠાકોર',
+      role: 'હેલ્પર',
+      dailyRate: 550,
+      otRate: 70,
+      phone: '97240 77889',
+      savedBy: 'admin',
+      createdAtMs: Date.now() - 1000,
+    },
+  ];
+  state.attendance[today] = {
+    w_demo_1: { status: 'P', otHours: 2, savedBy: 'admin' },
+    w_demo_2: { status: 'P', otHours: 1, savedBy: 'admin' },
+    w_demo_3: { status: 'P', otHours: 0, savedBy: 'admin' },
+  };
+  state.notes = [
+    {
+      id: 'n_demo_1',
+      title: 'કાચો માલ અને પેકિંગ બોક્સ',
+      category: 'માલ / સ્ટોક',
+      content: 'કાલે સવારે 200 કિલો રો-મટીરીયલ અને 50 પેકિંગ બોક્સ મંગાવવાના છે.',
+      updatedAt: getGujaratiTimestamp(),
+      savedBy: 'admin',
+      createdAtMs: Date.now(),
+    },
+  ];
+  saveToDeviceStorage();
+}
+
+function getWorkerDayRecord(dateISO, workerId) {
+  const dayMap = state.attendance[dateISO] || {};
+  const entry = dayMap[workerId];
+  if (!entry) return { status: '', otHours: 0, savedBy: '' };
+  if (typeof entry === 'string') return { status: entry, otHours: 0, savedBy: '' };
+  return {
+    status: entry.status || '',
+    otHours: Number(entry.otHours) || 0,
+    savedBy: entry.savedBy || '',
+  };
+}
+
+function calculateWorkerEarnings(worker, rec) {
+  const dailyRate = Number(worker.dailyRate) || 0;
+  const otRate = Number(worker.otRate) || 0;
+  let shiftPay = 0;
+  if (rec.status === 'P') shiftPay = roundMoney(dailyRate);
+  else if (rec.status === 'H') shiftPay = roundMoney(dailyRate * 0.5);
+
+  const otPay = roundMoney((Number(rec.otHours) || 0) * otRate);
+  return {
+    shiftPay,
+    otPay,
+    totalPay: roundMoney(shiftPay + otPay),
+  };
+}
+
+function refreshActiveView() {
+  if (!state.isAuthenticated) return;
+  if (state.activeTab === 'dashboard') renderDashboard();
+  if (state.activeTab === 'attendance') renderAttendancePage();
+  if (state.activeTab === 'monthly') renderMonthlyPage();
+  if (state.activeTab === 'notes') renderNotesPage();
+  if (state.activeTab === 'records') renderRecordsPage();
+}
+
+function recordAuditLog(action, detail) {
+  const logEntry = {
+    id: 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    action,
+    detail,
+    user: state.currentUser || ADMIN_ID,
+    timestamp: getGujaratiTimestamp(),
+    createdAtMs: Date.now(),
+  };
+  state.logs.unshift(logEntry);
+  if (state.logs.length > 200) state.logs.length = 200;
+  saveToDeviceStorage();
+}
+
+function saveSingleWorkerToCloud(workerObj, logMessage) {
+  const idx = state.workers.findIndex((w) => w.id === workerObj.id);
+  if (idx >= 0) state.workers[idx] = workerObj;
+  else state.workers.push(workerObj);
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('કારીગર સેવ', logMessage);
+}
+
+function deleteWorkerFromCloud(workerId, logMessage) {
+  state.workers = state.workers.filter((w) => w.id !== workerId);
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('કારીગર ડિલીટ', logMessage);
+}
+
+function saveDateAttendanceToCloud(dateISO, logMessage) {
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('હાજરી સેવ', logMessage);
+}
+
+function deleteDateAttendanceFromCloud(dateISO, logMessage) {
+  delete state.attendance[dateISO];
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('હાજરી ડિલીટ', logMessage);
+}
+
+function saveSingleNoteToCloud(noteObj, logMessage) {
+  const idx = state.notes.findIndex((n) => n.id === noteObj.id);
+  if (idx >= 0) state.notes[idx] = noteObj;
+  else state.notes.unshift(noteObj);
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('નોંધ સેવ', logMessage);
+}
+
+function deleteNoteFromCloud(noteId, logMessage) {
+  state.notes = state.notes.filter((n) => n.id !== noteId);
+  saveToDeviceStorage();
+  if (logMessage) recordAuditLog('નોંધ ડિલીટ', logMessage);
+}
+
+function updateStorageBadge() {
+  const dot = document.getElementById('cloud-sync-dot');
+  const label = document.getElementById('cloud-sync-label');
+  const recStatus = document.getElementById('records-cloud-status');
+  const recUid = document.getElementById('records-device-uid');
+
+  if (dot) dot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+  if (label) label.textContent = 'ઓટો-સેવ ચાલુ';
+  if (recStatus) recStatus.textContent = 'બધો ડેટા ઓટોમેટિક સેવ થાય છે';
+  if (recUid) recUid.textContent = 'LOCAL-AUTO-SAVE';
+}
 }
 
 function loadFromDeviceStorage() {
@@ -2248,8 +2410,8 @@ function bootApp() {
   setupMonthlyEvents();
   setupNotesEvents();
   setupRecordsEvents();
+  updateStorageBadge();
   updateAuthUI();
-  initCloudSync();
 }
 
 if (document.readyState === 'loading') {
